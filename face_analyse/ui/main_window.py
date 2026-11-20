@@ -14,6 +14,7 @@ from face_analyse.ui.context import AppContext
 from face_analyse.ui.pages.analysis import AnalysisPage
 from face_analyse.ui.pages.camera import CameraPage
 from face_analyse.ui.pages.common import Page
+from face_analyse.ui.pages.console import ConsolePage
 from face_analyse.ui.pages.database import DatabasePage
 from face_analyse.ui.pages.datalab import DataLabPage
 from face_analyse.ui.pages.graph import IntelligenceGraphPage
@@ -39,6 +40,7 @@ NAV = [
     ("datalab", "DATA LAB", DataLabPage),
     ("timeline", "TIMELINE", TimelinePage),
     ("tools", "IP · USERNAME", ToolsPage),
+    ("console", "CONSOLE", ConsolePage),
     ("loadtest", "STRESS TEST", LoadTestPage),
     ("history", "HISTORY", HistoryPage),
     ("guide", "GUIDE / INFO", GuidePage),

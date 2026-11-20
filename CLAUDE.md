@@ -23,15 +23,18 @@ face_analyse/
                (interfaces.py), pipeline, registry (SHA-256), quality, tracking,
                benchmark (LFW), preprocessing
   database/    repository (chiffré), models, crypto (Fernet + DPAPI)
-  osint/       sources (API officielles), usernames, iplookup, links, aggregator,
-               report (HTML/JSON), assistant (API Claude)
+  osint/       sources (API officielles), usernames (+ liens profil direct), iplookup,
+               links, aggregator, report (HTML/JSON), assistant (API Claude),
+               email/phone/images/pdf, netinfo (DNS-over-HTTPS, RDAP, crt.sh, en-têtes,
+               scan ports LOCAL), crypto_tools (hash/encodage, hors ligne),
+               generators (IP/IBAN factice/UUID/MAC + décodeur ID Discord), learn
   dataset/     loader (CSV/JSON/TXT) + analysis (stats, histogramme, doublons)
   graph/       model (nœuds/liens) + layout (force-dirigé numpy)
   auth/        client du serveur de comptes + device info
   ui/          theme, context (AppContext), splash, main_window, workers,
                widgets/ (dot_field, pixel_title, charts, command_palette, ...),
                pages/ (overview, analysis, camera, database, osint, graph, datalab,
-                       timeline, tools, history, guide, settings)
+                       timeline, tools, console, loadtest, history, guide, settings)
 server/        serveur FastAPI (comptes, sessions, panel admin, OAuth)
 docs/          BENCHMARK.md, LIMITES.md, ARCHITECTURE.md, benchmark.json
 ```

@@ -93,6 +93,20 @@ TOPICS: list[HelpTopic] = [
          "pas que c'est la bonne personne."],
     ),
     HelpTopic(
+        "console", "CONSOLE",
+        "Un terminal intégré pour apprendre la cyber et manipuler des sources publiques.",
+        "Interpréteur de commandes réel : recon réseau par API publiques (DNS-over-HTTPS, RDAP, crt.sh, "
+        "en-têtes HTTP, certificat TLS), scan de ports limité à tes propres machines, crypto/encodage hors "
+        "ligne (hash, base64, hex, rot13, morse, mots de passe), générateurs de données de test, décodeur "
+        "d'ID Discord, et des fiches `learn`.",
+        ["Tape `help` pour la liste des commandes, `learn` pour les fiches pédagogiques.",
+         "Recon : `dns exemple.com`, `whois exemple.com`, `subdomains exemple.com`, `headers tonsite.com`.",
+         "Crypto : `hash sha256 texte`, `b64 enc secret`, `pwgen 24`. Flèches ↑/↓ = historique."],
+        ["Ne vise QUE tes propres systèmes ou une cible explicitement autorisée.",
+         "Pas de DDoS, bruteforce, scraping ni contournement : c'est illégal et absent de l'outil.",
+         "Pour mesurer la charge de tes services, utilise le module STRESS TEST."],
+    ),
+    HelpTopic(
         "account", "COMPTE & SÉCURITÉ",
         "Comprendre la connexion par compte et ce qui est journalisé.",
         "Si un serveur est configuré, l'app exige une connexion (e-mail, Discord ou Google). "
