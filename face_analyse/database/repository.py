@@ -283,6 +283,34 @@ class Repository:
             s.commit()
         self._vacuum()
 
+    # ------------------------------------------------------------ agrégats (OVERVIEW)
+    def activity_by_day(self, days: int = 14) -> list[tuple[str, int]]:
+        """Nombre d'actions par jour, sur les N derniers jours (jours sans activité inclus)."""
+        from datetime import date, timedelta
+
+        today = date.today()
+        buckets = {(today - timedelta(days=i)).isoformat(): 0 for i in range(days)}
+        with self.session() as s:
+            rows = s.scalars(select(HistoryEntry.timestamp).order_by(HistoryEntry.timestamp.desc()).limit(5000)).all()
+        for ts in rows:
+            key = (ts.astimezone().date() if ts.tzinfo else ts.date()).isoformat()
+            if key in buckets:
+                buckets[key] += 1
+        return [(k, buckets[k]) for k in sorted(buckets)]
+
+    def module_usage(self) -> list[tuple[str, int]]:
+        """Répartition des actions par module (toutes périodes)."""
+        with self.session() as s:
+            rows = s.execute(
+                select(HistoryEntry.module, func.count(HistoryEntry.id))
+                .group_by(HistoryEntry.module).order_by(func.count(HistoryEntry.id).desc())
+            ).all()
+        return [(m or "autre", int(n)) for m, n in rows]
+
+    def history_count(self) -> int:
+        with self.session() as s:
+            return int(s.scalar(select(func.count(HistoryEntry.id))) or 0)
+
     # ------------------------------------------------------------ secrets
     def set_secret(self, name: str, value: str) -> None:
         with self._lock, self.session() as s:

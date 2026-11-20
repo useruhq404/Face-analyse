@@ -18,6 +18,7 @@ from face_analyse.ui.pages.database import DatabasePage
 from face_analyse.ui.pages.guide import GuidePage
 from face_analyse.ui.pages.history import HistoryPage
 from face_analyse.ui.pages.osint import OsintPage
+from face_analyse.ui.pages.overview import OverviewPage
 from face_analyse.ui.pages.settings import SettingsPage
 from face_analyse.ui.pages.tools import ToolsPage
 from face_analyse.ui.widgets.dot_field import DotField
@@ -25,6 +26,7 @@ from face_analyse.ui.widgets.pixel_title import PixelTitle
 from face_analyse.ui.widgets.toast import ToastHost
 
 NAV = [
+    ("overview", "OVERVIEW", OverviewPage),
     ("analysis", "FACE ANALYSIS", AnalysisPage),
     ("camera", "LIVE CAMERA", CameraPage),
     ("database", "FACE DATABASE", DatabasePage),
@@ -59,15 +61,26 @@ class MainWindow(QMainWindow):
         sl = QVBoxLayout(side)
         sl.setContentsMargins(0, 26, 0, 18)
         sl.setSpacing(2)
+        emblem = QLabel()
+        emblem_pix = QPixmap(str(resource_path("images", "emblem.png")))
+        if not emblem_pix.isNull():
+            emblem.setPixmap(emblem_pix.scaled(34, 34, Qt.AspectRatioMode.KeepAspectRatio,
+                                              Qt.TransformationMode.SmoothTransformation))
+        emblem.setStyleSheet("background: transparent; padding-left: 22px;")
         brand = PixelTitle(__app_name__, pixel=2, gap=1, max_drip=3, bold=False)
         brand.setContentsMargins(0, 0, 0, 0)
         sig = QLabel(__signature__)
         sig.setStyleSheet(f"color: {theme.MUTED}; font-size: 6pt; letter-spacing: 1px; padding-left: 22px; background: transparent;")
-        brand_row = QHBoxLayout()
-        brand_row.setContentsMargins(22, 0, 0, 0)
-        brand_row.addWidget(brand)
-        brand_row.addStretch(1)
-        sl.addLayout(brand_row)
+        brand_box = QVBoxLayout()
+        brand_box.setContentsMargins(0, 0, 0, 0)
+        brand_box.setSpacing(8)
+        brand_box.addWidget(emblem, 0, Qt.AlignmentFlag.AlignLeft)
+        title_row = QHBoxLayout()
+        title_row.setContentsMargins(22, 0, 14, 0)
+        title_row.addWidget(brand)
+        title_row.addStretch(1)
+        brand_box.addLayout(title_row)
+        sl.addLayout(brand_box)
         sl.addWidget(sig)
         sl.addSpacing(28)
 
@@ -86,6 +99,8 @@ class MainWindow(QMainWindow):
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.clicked.connect(lambda _=False, k=key: self.show_page(k))
             page.help_requested.connect(self.open_guide)
+            if hasattr(page, "navigate"):
+                page.navigate.connect(self.show_page)
             group.addButton(btn)
             self.buttons[key] = btn
             sl.addWidget(btn)
@@ -131,6 +146,9 @@ class MainWindow(QMainWindow):
         ctx.gallery_changed.connect(self._gallery_changed)
         self._current: str | None = None
 
+        QShortcut(QKeySequence("Ctrl+K"), self, activated=self.open_command_palette)
+        QShortcut(QKeySequence("Ctrl+P"), self, activated=self.open_command_palette)
+
     # ------------------------------------------------------------ navigation
     def show_page(self, key: str):
         if key not in self.pages or key == self._current:
@@ -154,6 +172,14 @@ class MainWindow(QMainWindow):
         anim.finished.connect(lambda: page.setGraphicsEffect(None))
         anim.start()
         self._page_anim = anim
+
+    def open_command_palette(self):
+        from face_analyse.ui.widgets.command_palette import CommandPalette
+
+        commands = [(f"→   {label}", lambda k=key: self.show_page(k)) for key, label, _ in NAV]
+        commands.append(("↻   Actualiser l'aperçu", lambda: self.pages["overview"].refresh()
+                         if "overview" in self.pages else None))
+        CommandPalette.open_for(self, commands)
 
     def open_guide(self, topic_key: str):
         self.show_page("guide")

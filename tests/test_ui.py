@@ -41,9 +41,10 @@ def test_welcome_menu_keyboard(qapp):
     assert w._selected == 3 and w.items[3].isChecked()
     got = []
     w.entered.connect(got.append)
-    w._outro_and_emit(MENU[w._selected][0])
+    expected = MENU[w._selected][0]
+    w._outro_and_emit(expected)
     w._outro.setCurrentTime(w._outro.duration())
-    assert got == ["osint"]
+    assert got == [expected]
 
 
 def test_main_window_all_pages(ctx):

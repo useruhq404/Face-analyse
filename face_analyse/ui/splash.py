@@ -17,6 +17,7 @@ from face_analyse.ui.widgets.pixel_title import PixelTitle
 
 #: (clé de page, libellé) — l'ordre définit les raccourcis 1 à 6.
 MENU = [
+    ("overview", "SYSTEM OVERVIEW"),
     ("analysis", "ANALYSE PHOTO"),
     ("camera", "CAMÉRA LIVE"),
     ("database", "BASE DE VISAGES"),
@@ -111,7 +112,7 @@ class WelcomeWindow(QWidget):
         self.enter_btn.setFixedSize(150, 40)
         self.enter_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.enter_btn.clicked.connect(self._enter)
-        hint = QLabel("1–8 pour choisir · ↵ pour entrer")
+        hint = QLabel("1–9 pour choisir · ↵ pour entrer")
         hint.setStyleSheet(f"color: {theme.MUTED}; font-size: 7pt; letter-spacing: 1px; background: transparent;")
         hint.setAlignment(Qt.AlignmentFlag.AlignRight)
         right = QVBoxLayout()
@@ -188,7 +189,7 @@ class WelcomeWindow(QWidget):
 
     def keyPressEvent(self, e: QKeyEvent):
         key = e.key()
-        if Qt.Key.Key_1 <= key <= Qt.Key.Key_8:
+        if Qt.Key.Key_1 <= key <= Qt.Key.Key_9:
             self._select(key - Qt.Key.Key_1)
         elif key in (Qt.Key.Key_Down, Qt.Key.Key_Tab):
             self._select(self._selected + 1)

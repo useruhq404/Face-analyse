@@ -116,6 +116,19 @@ def test_history_and_secrets(repo):
     assert repo.get_secret("anthropic_api_key") == ""
 
 
+def test_overview_aggregates(repo):
+    for mod, act, summ in [("osint", "search", "r1"), ("osint", "report", "r2"),
+                           ("analysis", "photo_analyzed", "a1"), ("tools", "ip_lookup", "t1")]:
+        repo.log_history(mod, act, summ)
+    assert repo.history_count() == 4
+    usage = dict(repo.module_usage())
+    assert usage["osint"] == 2 and usage["analysis"] == 1 and usage["tools"] == 1
+    days = repo.activity_by_day(14)
+    assert len(days) == 14
+    assert sum(n for _, n in days) == 4  # tout est aujourd'hui
+    assert days[-1][1] == 4  # dernière colonne = aujourd'hui
+
+
 def test_wipe(repo, fake_engine):
     pid = repo.add_person("A", "B", consent=True)
     repo.add_photo(pid, img(100), fake_engine)
