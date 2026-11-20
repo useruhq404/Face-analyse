@@ -124,3 +124,34 @@ def test_camera_pipeline_tracks_and_names(qapp, lfw_root, tmp_path, monkeypatch)
     last = sorted(frames[-1], key=lambda v: v.box[0])
     assert [v.label for v in last] == ["Tony Blair", "UNKNOWN"]
     assert len({v.track_id for f in frames for v in f}) == 2  # identités de piste stables
+
+
+def test_intelligence_graph_builds(qapp, tmp_path):
+    from face_analyse.core.config import Settings
+    from face_analyse.database.repository import Repository
+    from face_analyse.graph.layout import force_directed
+    from face_analyse.graph.model import build_graph
+    from face_analyse.ui.context import AppContext
+    from face_analyse.ui.pages.graph import IntelligenceGraphPage, NodeItem
+
+    repo = Repository(tmp_path / "g.db")
+    repo.add_person("Tony", "Blair", consent=True)
+    repo.log_history("osint", "search", "Recherche « X » : 2 résultat(s)")
+    g = build_graph(repo, include_demo=True)
+    assert any(n.demo for n in g.nodes) and any(not n.demo for n in g.nodes)
+    pos = force_directed(g)
+    assert len(pos) == len(g.nodes)
+    for (x, y) in pos.values():
+        assert 0.0 <= x <= 1.0 and 0.0 <= y <= 1.0
+
+    ctx = AppContext(Settings.load(), repo)
+    page = IntelligenceGraphPage(ctx)
+    page._build_scene((g, pos))
+    assert len(page.node_items) == len(g.nodes)
+    # sélection d'un nœud → voisinage mis en évidence
+    nid = next(n.id for n in g.nodes if g.neighbors(n.id))
+    page.node_items[nid].setSelected(True)
+    neighbours = g.neighbors(nid)
+    dimmed = [i for k, i in page.node_items.items() if k not in neighbours and k != nid]
+    assert any(i._dim for i in dimmed)
+    repo.close()

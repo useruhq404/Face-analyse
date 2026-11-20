@@ -25,10 +25,11 @@ MODULES = [
     ("camera", "02", "LIVE CAMERA", "Reconnaissance en direct, base consentante"),
     ("database", "03", "FACE DATABASE", "Personnes, photos, empreintes chiffrées"),
     ("osint", "04", "OSINT SEARCH", "Sources publiques, recherche par nom"),
-    ("tools", "05", "IP · USERNAME", "IP Lookup, Username Tracker"),
-    ("history", "06", "HISTORY", "Journal local horodaté"),
-    ("guide", "07", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
-    ("settings", "08", "SETTINGS", "Moteur, compte, données"),
+    ("graph", "05", "INTEL GRAPH", "Graphe relationnel interactif"),
+    ("tools", "06", "IP · USERNAME", "IP Lookup, Username Tracker"),
+    ("history", "07", "HISTORY", "Journal local horodaté"),
+    ("guide", "08", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
+    ("settings", "09", "SETTINGS", "Moteur, compte, données"),
 ]
 
 _MODULE_LABELS = {
