@@ -113,13 +113,23 @@ def main(argv: list[str] | None = None) -> int:
         QMessageBox.warning(win, __app_name__, msg or "Session fermée.")
         win.close()
 
+    def require_login() -> bool:
+        """Affiche la connexion si nécessaire. Retourne True si l'accès est accordé."""
+        if auth is None or auth.account is not None:
+            return True
+        login = LoginWindow(auth, repo, settings.auth.remember)
+        return bool(login.exec())
+
     def enter(page_key: str):
-        # Serveur configuré et pas de session valide : exiger la connexion.
-        if auth is not None and auth.account is None:
-            login = LoginWindow(auth, repo, settings.auth.remember)
-            if not login.exec():
-                return  # connexion annulée : on reste sur l'accueil
-        open_dashboard(page_key)
+        # Filet de sécurité : connexion encore requise (session expirée, etc.).
+        if require_login():
+            open_dashboard(page_key)
+
+    # Connexion obligatoire DÈS LE LANCEMENT quand un serveur est imposé.
+    if settings.force_login() and auth is not None and auth.account is None:
+        if not require_login():
+            repo.close()
+            return 0  # pas de connexion = pas d'accès à l'application
 
     welcome = WelcomeWindow()
     welcome.entered.connect(enter)

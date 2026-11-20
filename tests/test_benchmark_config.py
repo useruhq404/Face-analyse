@@ -37,11 +37,23 @@ def test_parse_lfw_pairs(tmp_path):
 
 def test_server_url_resolution(monkeypatch):
     s = Settings()
-    assert s.server_url() == ""  # autonome par défaut
+    assert s.server_url() == ""  # autonome par défaut (deployment.json vide)
+    assert s.force_login() is False  # pas de serveur → pas de login imposé
     s.auth.server_url = "https://panel.example/"
     assert s.server_url() == "https://panel.example"  # barre finale retirée
+    assert s.force_login() is True  # serveur défini → login obligatoire par défaut
     monkeypatch.setenv("FACE_ANALYSE_SERVER", "https://env.example")
     assert s.server_url() == "https://env.example"  # l'env a priorité
+
+
+def test_bundled_deployment_server_url(monkeypatch):
+    """Une URL embarquée dans deployment.json impose la connexion sans réglage."""
+    import face_analyse.core.config as config
+
+    monkeypatch.setattr(config, "_bundled_deployment",
+                        lambda: {"server_url": "https://owner.example", "force_login": True})
+    s = config.Settings()
+    assert s.server_url() == "https://owner.example" and s.force_login() is True
 
 
 def test_auth_settings_persisted():

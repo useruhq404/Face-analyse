@@ -1,0 +1,5 @@
+{
+  "_comment": "FACE ANALYSE — configuration de deploiement. Mettez l'URL de VOTRE serveur ci-dessous avant de compiler l'exe : l'application demandera alors la connexion a tous les utilisateurs. Laissez vide pour le mode autonome (sans compte).",
+  "server_url": "",
+  "force_login": true
+}

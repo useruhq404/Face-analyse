@@ -12,6 +12,7 @@ datas = [
     (str(RES / "models"), "face_analyse/resources/models"),
     (str(RES / "images"), "face_analyse/resources/images"),
     (str(RES / "benchmark.json"), "face_analyse/resources"),
+    (str(RES / "deployment.json"), "face_analyse/resources"),
 ]
 
 a = Analysis(

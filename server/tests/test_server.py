@@ -90,6 +90,30 @@ def test_admin_requires_admin_role(client):
     assert client.get("/admin/api/users", headers=auth(admin)).status_code == 200
 
 
+def test_regular_user_cannot_see_anyone_ip_or_admin_data(client):
+    """Un utilisateur normal n'accède à AUCUNE donnée d'administration (IP, sessions, journaux)."""
+    token = register(client).json()["token"]
+    # Tous les points d'administration sont refusés (403) au rôle « user ».
+    for path in ("/admin/api/overview", "/admin/api/users", "/admin/api/sessions",
+                 "/admin/api/events", "/admin/api/users/1"):
+        assert client.get(path, headers=auth(token)).status_code == 403, path
+    # Il ne peut pas non plus bannir/révoquer/supprimer.
+    assert client.post("/admin/api/users/1/ban", headers=auth(token), json={"banned": True}).status_code == 403
+    assert client.post("/admin/api/sessions/1/revoke", headers=auth(token)).status_code == 403
+    assert client.delete("/admin/api/users/1", headers=auth(token)).status_code == 403
+    # Son propre /auth/me ne révèle que SON compte (pas d'IP d'autrui).
+    me = client.get("/auth/me", headers=auth(token)).json()
+    assert "ip" not in me and set(me) == {"id", "pseudo", "email", "provider", "role", "status", "has_avatar"}
+
+
+def test_public_registration_is_always_user_role(client):
+    """L'inscription publique ne crée jamais d'administrateur : vous restez seul admin."""
+    data = register(client).json()
+    assert data["user"]["role"] == "user"
+    data2 = register(client, pseudo="mallory", email="mallory@x.fr").json()
+    assert data2["user"]["role"] == "user"
+
+
 def test_ban_blocks_user_and_revokes_sessions(client):
     token = register(client).json()["token"]
     admin = login(client).json()["token"]

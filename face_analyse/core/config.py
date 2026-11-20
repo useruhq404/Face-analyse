@@ -12,7 +12,19 @@ import os
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
-from face_analyse.core.paths import user_data_dir
+from face_analyse.core.paths import resource_path, user_data_dir
+
+
+def _bundled_deployment() -> dict:
+    """Configuration de déploiement embarquée (éditable avant compilation).
+
+    Fichier ``resources/deployment.json`` : l'éditeur du projet y met l'URL de
+    SON serveur pour que l'app distribuée exige la connexion sans réglage.
+    """
+    try:
+        return json.loads(resource_path("deployment.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +79,15 @@ class Settings:
     auth: AuthSettings = field(default_factory=AuthSettings)
 
     def server_url(self) -> str:
-        return (os.environ.get("FACE_ANALYSE_SERVER") or self.auth.server_url).strip().rstrip("/")
+        """URL du serveur de comptes. Priorité : env > réglage local > valeur embarquée."""
+        bundled = str(_bundled_deployment().get("server_url", ""))
+        return (os.environ.get("FACE_ANALYSE_SERVER") or self.auth.server_url or bundled).strip().rstrip("/")
+
+    def force_login(self) -> bool:
+        """Si vrai et qu'un serveur est défini : connexion obligatoire dès le lancement."""
+        if not self.server_url():
+            return False
+        return bool(_bundled_deployment().get("force_login", True))
 
     # ------------------------------------------------------------------
     @staticmethod
