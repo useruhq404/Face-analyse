@@ -18,6 +18,22 @@ def qapp():
     return app
 
 
+@pytest.fixture(autouse=True)
+def _cleanup_widgets():
+    """Ferme et détruit les widgets de niveau supérieur après chaque test.
+
+    Évite qu'un widget personnalisé (paintEvent surchargé) soit détruit dans un
+    mauvais ordre à la fermeture de l'interpréteur (« pure virtual method called »).
+    """
+    yield
+    app = QtWidgets.QApplication.instance()
+    if app is not None:
+        for w in list(app.topLevelWidgets()):
+            w.close()
+            w.deleteLater()
+        app.processEvents()
+
+
 @pytest.fixture
 def ctx(qapp, tmp_path):
     from face_analyse.core.config import Settings
@@ -155,3 +171,32 @@ def test_intelligence_graph_builds(qapp, tmp_path):
     dimmed = [i for k, i in page.node_items.items() if k not in neighbours and k != nid]
     assert any(i._dim for i in dimmed)
     repo.close()
+
+
+def test_timeline_view_maps_and_filters(qapp):
+    from datetime import datetime, timedelta
+
+    from face_analyse.ui.pages.timeline import TEvent, TimelineView
+
+    now = datetime(2026, 1, 10, 12, 0, 0)
+    events = [TEvent(now - timedelta(days=i), "osint" if i % 2 else "analysis", "a", f"e{i}") for i in range(10)]
+    v = TimelineView()
+    v.resize(800, 300)
+    v.set_events(events)
+    assert set(v._lanes) == {"osint", "analysis"}
+    # la fenêtre couvre toute la plage
+    assert v._start <= events[-1].ts.timestamp() and v._end >= events[0].ts.timestamp()
+    # x croît avec le temps
+    assert v._x(v._start) < v._x(v._end)
+    # masquer un module le retire des couloirs visibles
+    v.set_hidden({"osint"})
+    assert v._visible_lanes() == ["analysis"]
+    # zoom réduit la fenêtre
+    span_before = v._end - v._start
+    from PySide6.QtCore import QPoint
+    from PySide6.QtGui import QWheelEvent
+    from PySide6.QtCore import QPointF, Qt
+    ev = QWheelEvent(QPointF(400, 150), QPointF(400, 150), QPoint(0, 0), QPoint(0, 120),
+                     Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier, Qt.ScrollPhase.NoScrollPhase, False)
+    v.wheelEvent(ev)
+    assert (v._end - v._start) < span_before

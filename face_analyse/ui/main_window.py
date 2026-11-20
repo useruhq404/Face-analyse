@@ -21,6 +21,7 @@ from face_analyse.ui.pages.guide import GuidePage
 from face_analyse.ui.pages.history import HistoryPage
 from face_analyse.ui.pages.osint import OsintPage
 from face_analyse.ui.pages.overview import OverviewPage
+from face_analyse.ui.pages.timeline import TimelinePage
 from face_analyse.ui.pages.settings import SettingsPage
 from face_analyse.ui.pages.tools import ToolsPage
 from face_analyse.ui.widgets.dot_field import DotField
@@ -35,6 +36,7 @@ NAV = [
     ("osint", "OSINT SEARCH", OsintPage),
     ("graph", "INTEL GRAPH", IntelligenceGraphPage),
     ("datalab", "DATA LAB", DataLabPage),
+    ("timeline", "TIMELINE", TimelinePage),
     ("tools", "IP · USERNAME", ToolsPage),
     ("history", "HISTORY", HistoryPage),
     ("guide", "GUIDE / INFO", GuidePage),

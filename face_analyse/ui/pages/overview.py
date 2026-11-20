@@ -27,10 +27,11 @@ MODULES = [
     ("osint", "04", "OSINT SEARCH", "Sources publiques, recherche par nom"),
     ("graph", "05", "INTEL GRAPH", "Graphe relationnel interactif"),
     ("datalab", "06", "DATA LAB", "Import CSV/JSON/TXT, statistiques"),
-    ("tools", "07", "IP · USERNAME", "IP Lookup, Username Tracker"),
-    ("history", "08", "HISTORY", "Journal local horodaté"),
-    ("guide", "09", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
-    ("settings", "10", "SETTINGS", "Moteur, compte, données"),
+    ("timeline", "07", "TIMELINE", "Chronologie interactive des événements"),
+    ("tools", "08", "IP · USERNAME", "IP Lookup, Username Tracker"),
+    ("history", "09", "HISTORY", "Journal local horodaté"),
+    ("guide", "10", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
+    ("settings", "11", "SETTINGS", "Moteur, compte, données"),
 ]
 
 _MODULE_LABELS = {
