@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QTimer, Signal
 
 from face_analyse.core.config import Settings
 from face_analyse.database.repository import Repository
@@ -20,14 +20,17 @@ class AppContext(QObject):
     gallery_changed = Signal()
     notify = Signal(str, str)  # message, niveau (info/success/warning/error)
     busy = Signal(str, int, int)  # libellé, fait, total (total=0 : indéterminé, -1 : terminé)
+    account_revoked = Signal(str)  # session fermée à distance / compte suspendu
 
-    def __init__(self, settings: Settings, repo: Repository):
+    def __init__(self, settings: Settings, repo: Repository, auth=None):
         super().__init__()
         self.settings = settings
         self.repo = repo
+        self.auth = auth  # face_analyse.auth.client.AuthClient | None
         self.engine: FaceEngine | None = None
         self.engine_error: str = ""
         self._loaded_keys: tuple[str, str] | None = None
+        self._heartbeat: QTimer | None = None
 
     # ------------------------------------------------------------ moteur
     def load_engine(self) -> None:
@@ -73,3 +76,45 @@ class AppContext(QObject):
             det.set_score_threshold(s.detection_score)
         if hasattr(det, "enhance_lighting"):
             det.enhance_lighting = s.enhance_lighting
+
+    # ------------------------------------------------------------ compte / télémétrie
+    @property
+    def account(self):
+        return self.auth.account if self.auth else None
+
+    def log_event(self, module: str, action: str, detail: dict | None = None) -> None:
+        """Journalise une action côté serveur (si connecté), sans bloquer l'UI.
+
+        N'envoie jamais le contenu des images ni des recherches — seulement le
+        module et l'action, comme annoncé à l'utilisateur à la connexion.
+        """
+        if self.auth is None or not self.auth.token:
+            return
+        run_async(self.auth.log_event, module, action, detail or {})
+
+    def start_heartbeat(self) -> None:
+        if self.auth is None or not self.auth.token:
+            return
+        interval = max(15, self.settings.auth.heartbeat_s) * 1000
+        self._heartbeat = QTimer(self)
+        self._heartbeat.timeout.connect(self._tick_heartbeat)
+        self._heartbeat.start(interval)
+
+    def stop_heartbeat(self) -> None:
+        if self._heartbeat is not None:
+            self._heartbeat.stop()
+            self._heartbeat = None
+
+    def _tick_heartbeat(self) -> None:
+        if self.auth is None:
+            return
+        run_async(self.auth.heartbeat, on_done=self._heartbeat_ok, on_error=self._heartbeat_failed)
+
+    def _heartbeat_ok(self, data: dict) -> None:
+        if data.get("user_status") == "banned":
+            self.account_revoked.emit("Votre compte a été suspendu par l'administrateur.")
+
+    def _heartbeat_failed(self, msg: str) -> None:
+        # Session révoquée à distance, ou serveur injoignable.
+        if "révoquée" in msg or "suspendu" in msg or "invalide" in msg:
+            self.account_revoked.emit(msg)

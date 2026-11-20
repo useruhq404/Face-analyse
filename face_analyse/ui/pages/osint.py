@@ -23,7 +23,7 @@ class OsintPage(Page):
         super().__init__("OSINT SEARCH",
                          "Recherche à partir d'un nom et d'un prénom dans des sources publiques officielles. "
                          "Aucune recherche par visage. Les réseaux sociaux sans API publique sont proposés en liens "
-                         "à ouvrir vous-même.", parent)
+                         "à ouvrir vous-même.", parent, help_key="osint")
         self.ctx = ctx
         self.report: OsintReport | None = None
 
@@ -176,6 +176,7 @@ class OsintPage(Page):
         self.ctx.repo.log_history("osint", "search", f"Recherche « {rep.query.full_name} » : {len(rep.results)} résultat(s)",
                                   {"query": rep.query.full_name, "city": rep.query.city, "results": len(rep.results),
                                    "started_at": rep.started_at, "errors": errors})
+        self.ctx.log_event("osint", "search", {"results": len(rep.results), "errors": errors})
 
     def _fill_links(self, q: OsintQuery):
         self.links.clear()

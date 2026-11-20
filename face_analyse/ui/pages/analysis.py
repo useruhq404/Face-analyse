@@ -139,6 +139,7 @@ class AnalyzeTab(QWidget):
         self.ctx.repo.log_history("analysis", "photo_analyzed", f"{Path(path).name} : {n} visage(s), {known} correspondance(s)",
                                   {"file": Path(path).name, "faces": n,
                                    "labels": [a.decision.label if a.decision else None for a in analyses]})
+        self.ctx.log_event("analysis", "photo_analyzed", {"faces": n, "known": known})
 
 
 class CompareTab(QWidget):
@@ -215,7 +216,7 @@ class AnalysisPage(Page):
     def __init__(self, ctx: AppContext, parent=None):
         super().__init__("FACE ANALYSIS",
                          "Détection de tous les visages d'une photo, empreinte faciale et recherche dans la base locale "
-                         "consentante. Un visage absent de la base est toujours affiché UNKNOWN.", parent)
+                         "consentante. Un visage absent de la base est toujours affiché UNKNOWN.", parent, help_key="analysis")
         tabs = QTabWidget()
         tabs.addTab(AnalyzeTab(ctx), "ANALYSER")
         tabs.addTab(CompareTab(ctx), "COMPARER DEUX VISAGES")

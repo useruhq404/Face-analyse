@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFileDialog, QFrame, QLabel, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QFileDialog, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from face_analyse.engine.preprocessing import SUPPORTED_EXTENSIONS
 
@@ -17,20 +17,33 @@ SIMILARITY_NOTICE = (
 
 
 class Page(QWidget):
-    """Page avec en-tête (titre + sous-titre)."""
+    """Page avec en-tête (titre + sous-titre + bouton d'aide « ? »)."""
 
-    def __init__(self, title: str, subtitle: str, parent=None):
+    help_requested = Signal(str)  # clé du sujet d'aide
+
+    def __init__(self, title: str, subtitle: str, parent=None, help_key: str | None = None):
         super().__init__(parent)
         self.setObjectName("Page")
+        self.help_key = help_key
         self.root = QVBoxLayout(self)
         self.root.setContentsMargins(34, 26, 34, 22)
         self.root.setSpacing(14)
+        head = QHBoxLayout()
         h1 = QLabel(title)
         h1.setObjectName("H1")
+        head.addWidget(h1)
+        head.addStretch(1)
+        if help_key:
+            btn = QPushButton("?")
+            btn.setFixedSize(30, 30)
+            btn.setToolTip("Aide : à quoi sert ce module et comment il marche")
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(lambda: self.help_requested.emit(help_key))
+            head.addWidget(btn, 0, Qt.AlignmentFlag.AlignTop)
+        self.root.addLayout(head)
         h2 = QLabel(subtitle)
         h2.setObjectName("Muted")
         h2.setWordWrap(True)
-        self.root.addWidget(h1)
         self.root.addWidget(h2)
 
     def on_show(self) -> None:

@@ -42,3 +42,11 @@ class CameraError(FaceAnalyseError):
 
 class OsintError(FaceAnalyseError):
     user_message = "La recherche OSINT a échoué."
+
+
+class AuthError(FaceAnalyseError):
+    user_message = "Erreur d'authentification."
+
+
+class ServerUnavailableError(AuthError):
+    user_message = "Serveur de comptes injoignable."

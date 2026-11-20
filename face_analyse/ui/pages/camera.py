@@ -20,7 +20,7 @@ class CameraPage(Page):
     def __init__(self, ctx: AppContext, parent=None):
         super().__init__("CAMÉRA LIVE",
                          "Reconnaissance en direct à partir de la base consentante. Les personnes non enregistrées "
-                         "restent UNKNOWN : aucune recherche n'est faite en dehors de la base.", parent)
+                         "restent UNKNOWN : aucune recherche n'est faite en dehors de la base.", parent, help_key="camera")
         self.ctx = ctx
         self.thread: CameraThread | None = None
 
@@ -82,6 +82,7 @@ class CameraPage(Page):
             self.ctx.settings.camera.camera_consent_given = True
             self.ctx.settings.save()
         self.ctx.repo.log_history("camera", "permission", "Caméra autorisée" if granted else "Caméra refusée")
+        self.ctx.log_event("camera", "permission", {"granted": granted})
         return granted
 
     # ------------------------------------------------------------ contrôle

@@ -21,7 +21,7 @@ class DatabasePage(Page):
     def __init__(self, ctx: AppContext, parent=None):
         super().__init__("FACE DATABASE",
                          "Personnes ayant volontairement enregistré leurs photos. Photos et empreintes sont chiffrées "
-                         "sur ce poste ; la suppression efface définitivement toutes les données d'une personne.", parent)
+                         "sur ce poste ; la suppression efface définitivement toutes les données d'une personne.", parent, help_key="database")
         self.ctx = ctx
         self.current_id: int | None = None
 

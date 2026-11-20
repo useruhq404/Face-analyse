@@ -35,6 +35,24 @@ def test_parse_lfw_pairs(tmp_path):
     assert pairs[0].a.name == "A_0001.jpg" and pairs[2].b.name == "B_0002.jpg"
 
 
+def test_server_url_resolution(monkeypatch):
+    s = Settings()
+    assert s.server_url() == ""  # autonome par défaut
+    s.auth.server_url = "https://panel.example/"
+    assert s.server_url() == "https://panel.example"  # barre finale retirée
+    monkeypatch.setenv("FACE_ANALYSE_SERVER", "https://env.example")
+    assert s.server_url() == "https://env.example"  # l'env a priorité
+
+
+def test_auth_settings_persisted():
+    s = Settings.load()
+    s.auth.server_url = "https://panel.example"
+    s.auth.remember = False
+    s.save()
+    s2 = Settings.load()
+    assert s2.auth.server_url == "https://panel.example" and s2.auth.remember is False
+
+
 def test_settings_roundtrip_and_robustness():
     s = Settings.load()
     assert s.engine.match_threshold == 0.50

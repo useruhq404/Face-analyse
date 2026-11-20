@@ -14,6 +14,8 @@ avec un module OSINT de recherche **par nom** dans des sources publiques autoris
 | **LIVE CAMERA** | Autorisation demandée avant activation. Cadre qui suit chaque tête, nom affiché si la personne est enregistrée. Bascule entre caméras (avant / arrière / USB), mode miroir, enrôlement direct depuis la caméra |
 | **FACE DATABASE** | Personnes et consentement horodaté, plusieurs photos par personne, stockage chiffré, modification, recherche, suppression complète, recalcul des empreintes après changement de modèle |
 | **OSINT SEARCH** | Wikipedia FR/EN, Wikidata, Annuaire des Entreprises (data.gouv), BODACC, ORCID, HAL, OpenAlex, GitHub. Pseudonymes vérifiés sur 19 plateformes. Liens navigateur pour LinkedIn, Facebook, Instagram, TikTok, X, YouTube, Pages Jaunes, Pages Blanches, Societe.com, Pappers… Dédoublonnage, horodatage, rapport HTML/JSON, assistant IA (Claude) |
+| **IP · USERNAME** | **IP Lookup** (géoloc, ASN/opérateur, DNS inverse, carte) et **Username Tracker** (existence d'un pseudo sur ~19 plateformes) |
+| **GUIDE / INFO** | Explication de chaque module : à quoi il sert, comment il marche, comment l'utiliser (aussi via le bouton « ? » de chaque page) |
 | **HISTORY** | Journal local horodaté de toutes les opérations |
 | **SETTINGS** | Seuil avec taux d'erreur mesurés affichés en direct, choix du modèle, caméra, clés API chiffrées, effacement des données |
 
@@ -24,6 +26,23 @@ avec un module OSINT de recherche **par nom** dans des sources publiques autoris
   enregistrées reconnues, **0,5 %** des personnes absentes nommées à tort.
 * Détails, robustesse (lumière, résolution, compression, flou) et méthode :
   [docs/BENCHMARK.md](docs/BENCHMARK.md).
+
+## Comptes, accès et administration (facultatif)
+
+Un **serveur** (dossier `server/`) ajoute une couche de comptes et de contrôle :
+
+* connexion par **e-mail, Discord ou Google** (OAuth) avec pseudo + avatar ;
+* **panel admin** (`/admin`) réservé au propriétaire : qui est en ligne, depuis quelle
+  machine et quelle IP (géolocalisée), journal d'activité, **suspension/ révocation à distance** ;
+* journalisation **transparente** : l'utilisateur voit à la connexion ce qui est enregistré (RGPD) ;
+* le contenu des images et des recherches **n'est jamais** envoyé au serveur, seulement les actions.
+
+Sans serveur configuré, l'application reste **autonome** (aucun compte requis). Voir
+[`server/README.md`](server/README.md) pour le déploiement.
+
+> **Protection du projet.** Un `.exe` peut être décompilé : la vraie protection vient du serveur.
+> Tant que vous ne distribuez pas le serveur ni `FA_SECRET_KEY`, personne ne peut créer de session
+> valide, et vous pouvez révoquer un accès à tout moment.
 
 ## Ce que le logiciel ne fait pas, volontairement
 

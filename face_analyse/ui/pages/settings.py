@@ -27,7 +27,7 @@ def load_benchmark() -> dict | None:
 
 class SettingsPage(Page):
     def __init__(self, ctx: AppContext, parent=None):
-        super().__init__("SETTINGS", "Paramètres du moteur, de la caméra, de l'OSINT et protection des données.", parent)
+        super().__init__("SETTINGS", "Paramètres du moteur, de la caméra, de l'OSINT et protection des données.", parent, help_key="settings")
         self.ctx = ctx
         self.bench = load_benchmark()
         s = ctx.settings
@@ -119,6 +119,32 @@ class SettingsPage(Page):
                            "Laisser vide pour conserver la clé actuelle."))
         lay.addWidget(c)
 
+        # ----- compte & accès
+        c, cl = card()
+        cl.addWidget(section_label("Compte & accès"))
+        form = QFormLayout()
+        self.server_url = QLineEdit(s.auth.server_url)
+        self.server_url.setPlaceholderText("https://panel.mondomaine.fr  (vide = mode autonome, sans compte)")
+        form.addRow("Serveur de comptes", self.server_url)
+        self.remember = QCheckBox("Rester connecté entre deux lancements")
+        self.remember.setChecked(s.auth.remember)
+        form.addRow("", self.remember)
+        acc = ctx.account
+        if acc is not None:
+            form.addRow("Connecté", QLabel(f"@{acc.pseudo} ({acc.provider}) — rôle {acc.role}"))
+        cl.addLayout(form)
+        account_row = QHBoxLayout()
+        logout_btn = QPushButton("SE DÉCONNECTER")
+        logout_btn.clicked.connect(self._logout)
+        logout_btn.setEnabled(acc is not None)
+        account_row.addWidget(logout_btn)
+        account_row.addStretch(1)
+        cl.addLayout(account_row)
+        cl.addWidget(muted("Avec un serveur, l'app exige une connexion (e-mail, Discord ou Google) et "
+                           "l'administrateur peut suspendre un compte à distance. Ce qui est journalisé est "
+                           "affiché à la connexion. Un changement d'URL prend effet au prochain démarrage."))
+        lay.addWidget(c)
+
         # ----- données
         c, cl = card()
         cl.addWidget(section_label("Données & confidentialité"))
@@ -185,7 +211,13 @@ class SettingsPage(Page):
         s.osint.timeout_s = self.timeout.value()
         s.osint.username_check = self.handles.isChecked()
         s.osint.ai_model = self.ai_model.currentText()
+        new_server = self.server_url.text().strip().rstrip("/")
+        server_changed = new_server != s.auth.server_url
+        s.auth.server_url = new_server
+        s.auth.remember = self.remember.isChecked()
         s.save()
+        if server_changed:
+            self.ctx.notify.emit("Serveur enregistré : il sera pris en compte au prochain démarrage.", "info")
         if self.api_key.text().strip():
             self.ctx.repo.set_secret("anthropic_api_key", self.api_key.text().strip())
             self.api_key.clear()
@@ -196,6 +228,13 @@ class SettingsPage(Page):
             self.openalex_key.setPlaceholderText("déjà enregistrée")
         self.ctx.apply_engine_settings()
         self.ctx.notify.emit("Paramètres enregistrés.", "success")
+
+    def _logout(self):
+        if self.ctx.auth is not None:
+            self.ctx.auth.logout()
+        self.ctx.repo.set_secret("auth_token", "")
+        self.ctx.stop_heartbeat()
+        self.ctx.notify.emit("Déconnecté. Fermez puis rouvrez l'application pour vous reconnecter.", "info")
 
     def _delete_keys(self):
         self.ctx.repo.set_secret("anthropic_api_key", "")

@@ -62,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
     from face_analyse.core.errors import FaceAnalyseError
     from face_analyse.database.repository import Repository
     from face_analyse.ui.context import AppContext
+    from face_analyse.ui.login_window import TOKEN_SECRET, LoginWindow
     from face_analyse.ui.main_window import MainWindow
     from face_analyse.ui.splash import WelcomeWindow
 
@@ -70,24 +71,61 @@ def main(argv: list[str] | None = None) -> int:
     except FaceAnalyseError as exc:
         QMessageBox.critical(None, __app_name__, exc.user_message)
         return 3
-    ctx = AppContext(Settings.load(), repo)
+    settings = Settings.load()
+
+    # Mode avec comptes si un serveur est configuré, sinon mode autonome.
+    auth = None
+    server_url = settings.server_url()
+    if server_url:
+        from face_analyse.auth.client import AuthClient
+
+        auth = AuthClient(server_url)
+        stored = repo.get_secret(TOKEN_SECRET)
+        if settings.auth.remember and stored:
+            try:
+                auth.resume(stored)  # reprise silencieuse de session
+            except FaceAnalyseError:
+                pass
+
+    ctx = AppContext(settings, repo, auth=auth)
     ctx.load_engine()  # en tâche de fond pendant l'écran d'accueil
 
     holder: dict[str, MainWindow] = {}
 
-    def enter(page_key: str):
+    def open_dashboard(page_key: str):
         win = MainWindow(ctx)
         holder["main"] = win
+        ctx.account_revoked.connect(lambda msg: _on_revoked(win, msg))
         win.show_page(page_key)
         win.fade_in()
         if ctx.engine is not None:
             win._engine_ready()
             win._gallery_changed()
+        ctx.start_heartbeat()
+        if ctx.account:
+            ctx.log_event("app", "open", {"page": page_key})
+
+    def _on_revoked(win: MainWindow, msg: str):
+        ctx.stop_heartbeat()
+        if auth:
+            auth.logout()
+            repo.set_secret(TOKEN_SECRET, "")
+        QMessageBox.warning(win, __app_name__, msg or "Session fermée.")
+        win.close()
+
+    def enter(page_key: str):
+        # Serveur configuré et pas de session valide : exiger la connexion.
+        if auth is not None and auth.account is None:
+            login = LoginWindow(auth, repo, settings.auth.remember)
+            if not login.exec():
+                return  # connexion annulée : on reste sur l'accueil
+        open_dashboard(page_key)
 
     welcome = WelcomeWindow()
     welcome.entered.connect(enter)
     welcome.show()
     code = app.exec()
+    ctx.stop_heartbeat()
     repo.close()
     return code
 

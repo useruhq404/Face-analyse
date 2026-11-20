@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FACE ANALYSE · Admin</title>
+<style>
+  :root{--bg:#050505;--panel:#0b0b0b;--line:#1e1e1e;--fg:#ececec;--muted:#7d7d7d;--white:#fff;
+        --ok:#79e0a0;--warn:#ffd27a;--danger:#ff7a7a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;font-size:14px}
+  header{display:flex;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid var(--line)}
+  h1{font-weight:200;letter-spacing:5px;font-size:18px;margin:0}
+  .muted{color:var(--muted)} .spacer{flex:1}
+  button{background:transparent;border:1px solid #2c2c2c;color:var(--fg);padding:6px 12px;border-radius:4px;
+         cursor:pointer;letter-spacing:1px}
+  button:hover{border-color:var(--white)}
+  button.primary{border-color:var(--white)} button.danger{border-color:#5a2a2a;color:var(--danger)}
+  input{background:var(--panel);border:1px solid #2c2c2c;color:var(--fg);padding:8px;border-radius:4px}
+  #login{max-width:360px;margin:12vh auto;display:flex;flex-direction:column;gap:12px;padding:0 20px}
+  #app{display:none}
+  .cards{display:flex;gap:12px;flex-wrap:wrap;padding:18px 24px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 18px;min-width:120px}
+  .card .n{font-size:26px;font-weight:200} .card .l{color:var(--muted);font-size:11px;letter-spacing:2px;text-transform:uppercase}
+  nav{display:flex;gap:4px;padding:0 24px;border-bottom:1px solid var(--line)}
+  nav button{border:none;border-bottom:2px solid transparent;border-radius:0;color:var(--muted);padding:10px 14px}
+  nav button.active{color:var(--white);border-bottom-color:var(--white)}
+  main{padding:18px 24px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+  th{color:var(--muted);font-weight:400;font-size:11px;letter-spacing:1px}
+  tr:hover td{background:#0d0d0d}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+  .on{background:var(--ok)} .off{background:#444}
+  .pill{border:1px solid #333;border-radius:10px;padding:1px 8px;font-size:11px}
+  .pill.admin{border-color:#6a5a2a;color:var(--warn)} .pill.banned{border-color:#5a2a2a;color:var(--danger)}
+  .av{width:26px;height:26px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:8px;background:#222}
+  #drawer{position:fixed;top:0;right:0;width:min(560px,96vw);height:100%;background:#080808;border-left:1px solid var(--line);
+          transform:translateX(100%);transition:.2s;overflow:auto;padding:20px}
+  #drawer.open{transform:none}
+  .ev{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#bbb}
+  .err{color:var(--danger)} .row{display:flex;gap:8px;align-items:center}
+  code{color:#9fd}
+</style>
+</head>
+<body>
+<div id="login">
+  <h1 style="text-align:center">FACE ANALYSE</h1>
+  <div class="muted" style="text-align:center;letter-spacing:2px">PANNEAU ADMINISTRATEUR</div>
+  <input id="l_id" placeholder="E-mail ou pseudo administrateur">
+  <input id="l_pw" type="password" placeholder="Mot de passe">
+  <button class="primary" onclick="doLogin()">SE CONNECTER</button>
+  <div id="l_err" class="err"></div>
+</div>
+
+<div id="app">
+  <header>
+    <h1>FACE ANALYSE</h1><span class="muted" style="letter-spacing:3px">ADMIN</span>
+    <span class="spacer"></span>
+    <span id="who" class="muted"></span>
+    <button onclick="refresh()">↻</button>
+    <button onclick="logout()">Quitter</button>
+  </header>
+  <div class="cards" id="cards"></div>
+  <nav>
+    <button data-tab="online" class="active" onclick="tab('online')">EN LIGNE</button>
+    <button data-tab="users" onclick="tab('users')">UTILISATEURS</button>
+    <button data-tab="events" onclick="tab('events')">JOURNAL</button>
+  </nav>
+  <main id="main"></main>
+</div>
+
+<div id="drawer"><button onclick="closeDrawer()">✕ Fermer</button><div id="drawerBody"></div></div>
+
+<script>
+const api = (p, o={}) => fetch(p, {...o, headers:{...(o.headers||{}),
+  'Authorization':'Bearer '+localStorage.fa_admin, 'Content-Type':'application/json'}});
+let CURRENT='online', TIMER=null;
+
+async function doLogin(){
+  const err=document.getElementById('l_err'); err.textContent='';
+  try{
+    const r=await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({identifier:l_id.value,password:l_pw.value,device:{hostname:'admin-web',os_name:navigator.platform,app_version:'web'}})});
+    if(!r.ok){err.textContent=(await r.json()).detail||'Échec'; return;}
+    const d=await r.json();
+    if(d.user.role!=='admin'){err.textContent='Ce compte n\'est pas administrateur.'; return;}
+    localStorage.fa_admin=d.token; start(d.user);
+  }catch(e){err.textContent='Serveur injoignable.';}
+}
+function logout(){ api('/auth/logout',{method:'POST'}); localStorage.removeItem('fa_admin'); location.reload(); }
+
+function start(user){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('who').textContent=user?('@'+user.pseudo):'';
+  refresh(); if(TIMER) clearInterval(TIMER); TIMER=setInterval(refresh,15000);
+}
+function tab(t){CURRENT=t;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));render();}
+function refresh(){ loadCards(); render(); }
+
+async function loadCards(){
+  const r=await api('/admin/api/overview'); if(r.status===401){location.reload();return;}
+  const d=await r.json();
+  cards.innerHTML=[['EN LIGNE',d.online],['SESSIONS',d.sessions_active],['UTILISATEURS',d.users],
+    ['BANNIS',d.banned],['ÉVÉNEMENTS',d.events]].map(([l,n])=>
+    `<div class="card"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+}
+function esc(s){return (s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function geo(g){ if(!g||!g.country) return ''; let t=[g.city,g.country].filter(Boolean).join(', ');
+  if(g.proxy) t+=' ⚠proxy'; if(g.hosting) t+=' ⚠hosting'; return t+(g.isp?' · '+esc(g.isp):''); }
+
+async function render(){
+  if(CURRENT==='online'){
+    const d=await (await api('/admin/api/sessions?online=1')).json();
+    main.innerHTML=`<table><tr><th>Utilisateur</th><th>IP</th><th>Localisation</th><th>Machine</th><th>App</th><th>Vu</th><th></th></tr>
+    ${d.map(s=>`<tr><td><span class="dot on"></span>@${esc(s.pseudo)}</td><td>${esc(s.ip)}</td>
+      <td class="muted">${geo(s.geo)}</td><td>${esc(s.hostname)} · ${esc(s.os_name)}</td><td>${esc(s.app_version)}</td>
+      <td class="muted">${new Date(s.last_seen).toLocaleTimeString()}</td>
+      <td><button class="danger" onclick="revoke(${s.id})">Révoquer</button></td></tr>`).join('')||'<tr><td colspan=7 class=muted>Personne en ligne.</td></tr>'}</table>`;
+  } else if(CURRENT==='users'){
+    const d=await (await api('/admin/api/users')).json();
+    main.innerHTML=`<table><tr><th>Pseudo</th><th>Compte</th><th>Rôle</th><th>État</th><th>Sessions</th><th>Dernière connexion</th></tr>
+    ${d.map(u=>`<tr onclick="openUser(${u.id})" style="cursor:pointer">
+      <td><img class="av" src="/users/${u.id}/avatar" onerror="this.style.visibility='hidden'">@${esc(u.pseudo)}</td>
+      <td class="muted">${esc(u.email||'—')}<br><span class=muted>${u.provider}</span></td>
+      <td>${u.role==='admin'?'<span class="pill admin">admin</span>':'<span class=pill>user</span>'}</td>
+      <td>${u.status==='banned'?'<span class="pill banned">banni</span>':'<span class=pill>actif</span>'}</td>
+      <td>${u.online?'<span class="dot on"></span>':''}${u.sessions}</td>
+      <td class="muted">${u.last_login_at?new Date(u.last_login_at).toLocaleString():'jamais'}</td></tr>`).join('')}</table>`;
+  } else {
+    const d=await (await api('/admin/api/events?limit=300')).json();
+    main.innerHTML=`<table><tr><th>Heure</th><th>Utilisateur</th><th>Type</th><th>Action</th><th>IP</th><th>Détail</th></tr>
+    ${d.map(e=>`<tr><td class="muted">${new Date(e.ts).toLocaleString()}</td><td>@${esc(e.pseudo)}</td>
+      <td><span class=pill>${esc(e.kind)}</span></td><td>${esc(e.module)}/${esc(e.action)}</td>
+      <td class="muted">${esc(e.ip)}</td><td class="ev">${esc(JSON.stringify(e.detail))}</td></tr>`).join('')}</table>`;
+  }
+}
+
+async function openUser(id){
+  const d=await (await api('/admin/api/users/'+id)).json(); const u=d.user;
+  document.getElementById('drawer').classList.add('open');
+  drawerBody.innerHTML=`<div class="row"><img class="av" style="width:48px;height:48px" src="/users/${u.id}/avatar" onerror="this.style.visibility='hidden'">
+    <div><div style="font-size:18px">@${esc(u.pseudo)} ${u.role==='admin'?'<span class="pill admin">admin</span>':''}</div>
+    <div class="muted">${esc(u.email||'—')} · ${u.provider}</div></div></div>
+    <div class="row" style="margin:14px 0;flex-wrap:wrap">
+      <button class="${u.status==='banned'?'':'danger'}" onclick="ban(${u.id},${u.status!=='banned'})">${u.status==='banned'?'Réactiver':'Bannir'}</button>
+      <button onclick="setRole(${u.id},'${u.role==='admin'?'user':'admin'}')">${u.role==='admin'?'Retirer admin':'Promouvoir admin'}</button>
+      <button class="danger" onclick="delUser(${u.id})">Supprimer (RGPD)</button>
+    </div>
+    <h3 class="muted">SESSIONS</h3><table><tr><th>IP</th><th>Localisation</th><th>Machine</th><th>Vu</th><th></th></tr>
+    ${d.sessions.map(s=>`<tr><td>${s.online?'<span class="dot on"></span>':'<span class="dot off"></span>'}${esc(s.ip)}</td>
+      <td class="muted">${geo(s.geo)}</td><td>${esc(s.hostname)}·${esc(s.os_name)}<br><span class=muted>${esc(s.machine_id)}</span></td>
+      <td class="muted">${new Date(s.last_seen).toLocaleString()}</td>
+      <td>${s.revoked?'<span class=muted>révoquée</span>':`<button class="danger" onclick="revoke(${s.id})">×</button>`}</td></tr>`).join('')}</table>
+    <h3 class="muted" style="margin-top:18px">JOURNAL (100 derniers)</h3>
+    <div>${d.events.map(e=>`<div class="ev">${new Date(e.ts).toLocaleString()} · ${esc(e.kind)} · ${esc(e.module)}/${esc(e.action)} · ${esc(e.ip)} ${esc(JSON.stringify(e.detail))}</div>`).join('')}</div>`;
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
+async function ban(id,b){await api('/admin/api/users/'+id+'/ban',{method:'POST',body:JSON.stringify({banned:b})});openUser(id);refresh();}
+async function setRole(id,r){await api('/admin/api/users/'+id+'/role',{method:'POST',body:JSON.stringify({role:r})});openUser(id);refresh();}
+async function revoke(id){await api('/admin/api/sessions/'+id+'/revoke',{method:'POST'});refresh();}
+async function delUser(id){if(confirm('Supprimer définitivement cet utilisateur et toutes ses données ?')){await api('/admin/api/users/'+id,{method:'DELETE'});closeDrawer();refresh();}}
+
+if(localStorage.fa_admin){ api('/auth/me').then(r=>r.ok?r.json():Promise.reject()).then(u=>u.role==='admin'?start(u):logout()).catch(()=>{}); }
+</script>
+</body>
+</html>

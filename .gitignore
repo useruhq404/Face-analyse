@@ -11,3 +11,7 @@ dist/
 *.db-shm
 vault.key
 settings.json
+# serveur
+server/fa_server_data/
+fa_server_data/
+server.db

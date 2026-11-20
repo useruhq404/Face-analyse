@@ -15,9 +15,11 @@ from face_analyse.ui.pages.analysis import AnalysisPage
 from face_analyse.ui.pages.camera import CameraPage
 from face_analyse.ui.pages.common import Page
 from face_analyse.ui.pages.database import DatabasePage
+from face_analyse.ui.pages.guide import GuidePage
 from face_analyse.ui.pages.history import HistoryPage
 from face_analyse.ui.pages.osint import OsintPage
 from face_analyse.ui.pages.settings import SettingsPage
+from face_analyse.ui.pages.tools import ToolsPage
 from face_analyse.ui.widgets.dot_field import DotField
 from face_analyse.ui.widgets.pixel_title import PixelTitle
 from face_analyse.ui.widgets.toast import ToastHost
@@ -27,7 +29,9 @@ NAV = [
     ("camera", "LIVE CAMERA", CameraPage),
     ("database", "FACE DATABASE", DatabasePage),
     ("osint", "OSINT SEARCH", OsintPage),
+    ("tools", "IP · USERNAME", ToolsPage),
     ("history", "HISTORY", HistoryPage),
+    ("guide", "GUIDE / INFO", GuidePage),
     ("settings", "SETTINGS", SettingsPage),
 ]
 
@@ -81,11 +85,16 @@ class MainWindow(QMainWindow):
             btn.setCheckable(True)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.clicked.connect(lambda _=False, k=key: self.show_page(k))
+            page.help_requested.connect(self.open_guide)
             group.addButton(btn)
             self.buttons[key] = btn
             sl.addWidget(btn)
             QShortcut(QKeySequence(f"Ctrl+{i}"), self, activated=lambda k=key: self.show_page(k))
         sl.addStretch(1)
+        self.account_lbl = QLabel("")
+        self.account_lbl.setStyleSheet(f"color: {theme.FG}; font-size: 8pt; padding-left: 22px; background: transparent;")
+        sl.addWidget(self.account_lbl)
+        self._update_account_label()
         self.engine_lbl = QLabel("● moteur : chargement…")
         self.engine_lbl.setStyleSheet(f"color: {theme.MUTED}; font-size: 8pt; padding-left: 22px; background: transparent;")
         self.gallery_lbl = QLabel("")
@@ -134,6 +143,7 @@ class MainWindow(QMainWindow):
         self.buttons[key].setChecked(True)
         self.stack.setCurrentWidget(page)
         page.on_show()
+        self.ctx.log_event("nav", "open", {"page": key})
         fx = QGraphicsOpacityEffect(page)
         page.setGraphicsEffect(fx)
         anim = QPropertyAnimation(fx, b"opacity", page)
@@ -144,6 +154,21 @@ class MainWindow(QMainWindow):
         anim.finished.connect(lambda: page.setGraphicsEffect(None))
         anim.start()
         self._page_anim = anim
+
+    def open_guide(self, topic_key: str):
+        self.show_page("guide")
+        guide = self.pages.get("guide")
+        if guide is not None:
+            guide.show_topic(topic_key)
+
+    def _update_account_label(self):
+        acc = self.ctx.account
+        if acc is not None:
+            self.account_lbl.setText(f"● connecté : @{acc.pseudo}")
+        elif self.ctx.auth is not None:
+            self.account_lbl.setText("● non connecté")
+        else:
+            self.account_lbl.setText("● mode autonome (sans compte)")
 
     def fade_in(self):
         self.setWindowOpacity(0.0)

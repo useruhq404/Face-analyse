@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 
@@ -50,10 +51,23 @@ class OsintSettings:
 
 
 @dataclass
+class AuthSettings:
+    # URL du serveur de comptes. Vide = mode autonome (aucun compte requis).
+    # La variable d'environnement FACE_ANALYSE_SERVER a priorité.
+    server_url: str = ""
+    remember: bool = True  # conserver la session entre deux lancements
+    heartbeat_s: int = 45  # fréquence des battements de cœur
+
+
+@dataclass
 class Settings:
     engine: EngineSettings = field(default_factory=EngineSettings)
     camera: CameraSettings = field(default_factory=CameraSettings)
     osint: OsintSettings = field(default_factory=OsintSettings)
+    auth: AuthSettings = field(default_factory=AuthSettings)
+
+    def server_url(self) -> str:
+        return (os.environ.get("FACE_ANALYSE_SERVER") or self.auth.server_url).strip().rstrip("/")
 
     # ------------------------------------------------------------------
     @staticmethod
@@ -71,7 +85,7 @@ class Settings:
         except (OSError, json.JSONDecodeError) as exc:
             log.warning("Paramètres illisibles (%s), valeurs par défaut utilisées", exc)
             return s
-        for section_name in ("engine", "camera", "osint"):
+        for section_name in ("engine", "camera", "osint", "auth"):
             section = getattr(s, section_name)
             known = {f.name for f in fields(section)}
             for key, value in (raw.get(section_name) or {}).items():

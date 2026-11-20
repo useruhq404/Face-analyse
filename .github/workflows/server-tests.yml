@@ -1,0 +1,22 @@
+name: server-tests
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dépendances serveur
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r server/requirements.txt pytest
+      - name: Tests serveur
+        working-directory: server
+        run: python -m pytest -q

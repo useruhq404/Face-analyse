@@ -21,7 +21,9 @@ MENU = [
     ("camera", "CAMÉRA LIVE"),
     ("database", "BASE DE VISAGES"),
     ("osint", "RECHERCHE OSINT"),
+    ("tools", "IP · USERNAME"),
     ("history", "HISTORIQUE"),
+    ("guide", "GUIDE / INFO"),
     ("settings", "PARAMÈTRES"),
 ]
 
@@ -109,7 +111,7 @@ class WelcomeWindow(QWidget):
         self.enter_btn.setFixedSize(150, 40)
         self.enter_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.enter_btn.clicked.connect(self._enter)
-        hint = QLabel("1–6 pour choisir · ↵ pour entrer")
+        hint = QLabel("1–8 pour choisir · ↵ pour entrer")
         hint.setStyleSheet(f"color: {theme.MUTED}; font-size: 7pt; letter-spacing: 1px; background: transparent;")
         hint.setAlignment(Qt.AlignmentFlag.AlignRight)
         right = QVBoxLayout()
@@ -186,7 +188,7 @@ class WelcomeWindow(QWidget):
 
     def keyPressEvent(self, e: QKeyEvent):
         key = e.key()
-        if Qt.Key.Key_1 <= key <= Qt.Key.Key_6:
+        if Qt.Key.Key_1 <= key <= Qt.Key.Key_8:
             self._select(key - Qt.Key.Key_1)
         elif key in (Qt.Key.Key_Down, Qt.Key.Key_Tab):
             self._select(self._selected + 1)
