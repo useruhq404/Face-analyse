@@ -35,6 +35,11 @@ def build_links(q: OsintQuery) -> list[SearchLink]:
         SearchLink("Pinterest", "Réseaux sociaux", f"https://www.pinterest.com/search/users/?q={qp(name)}"),
         SearchLink("Reddit", "Réseaux sociaux", f"https://www.reddit.com/search/?q={qp(name)}&type=user"),
         SearchLink("Threads (via Google)", "Réseaux sociaux", g + qp(f"site:threads.net {exact}")),
+        SearchLink("Discord (via Google)", "Réseaux sociaux", g + qp(f"{exact} discord")),
+        SearchLink("Twitch (via Google)", "Réseaux sociaux", g + qp(f"site:twitch.tv {exact}")),
+        SearchLink("VK", "Réseaux sociaux", f"https://vk.com/people/{qp(name)}"),
+        SearchLink("Telegram (via Google)", "Réseaux sociaux", g + qp(f"site:t.me {exact}")),
+        SearchLink("Tumblr (via Google)", "Réseaux sociaux", g + qp(f"site:tumblr.com {exact}")),
         # Annuaires
         SearchLink("Pages Blanches", "Annuaires", f"https://www.pagesjaunes.fr/pagesblanches/recherche?quoiqui={qp(name)}&ou={qp(city)}",
                    "annuaire des particuliers (listes publiées volontairement)"),

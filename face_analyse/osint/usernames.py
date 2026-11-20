@@ -67,6 +67,95 @@ class UsernameHit:
     detail: str = ""
 
 
+@dataclass(frozen=True)
+class ProfileSite:
+    """Site dont l'URL de profil est prévisible à partir du pseudo.
+
+    Ces plateformes bloquent la collecte automatisée (anti-robots) : on ne les
+    interroge PAS. On construit seulement l'URL à OUVRIR dans le navigateur, avec
+    son propre compte, dans le respect des règles du site.
+    """
+    name: str
+    category: str
+    url: str  # gabarit avec {u}
+    note: str = ""
+
+
+#: Grand répertoire « façon menu » — liens profil direct, à ouvrir soi-même.
+#: Couvre les réseaux que l'anti-robots interdit d'interroger automatiquement.
+DIRECT_PROFILE_SITES: list[ProfileSite] = [
+    # Réseaux sociaux grand public
+    ProfileSite("Instagram", "Réseaux sociaux", "https://www.instagram.com/{u}/"),
+    ProfileSite("TikTok", "Réseaux sociaux", "https://www.tiktok.com/@{u}"),
+    ProfileSite("Snapchat", "Réseaux sociaux", "https://www.snapchat.com/add/{u}"),
+    ProfileSite("X / Twitter", "Réseaux sociaux", "https://x.com/{u}"),
+    ProfileSite("Facebook", "Réseaux sociaux", "https://www.facebook.com/{u}"),
+    ProfileSite("LinkedIn", "Réseaux sociaux", "https://www.linkedin.com/in/{u}", "connexion requise"),
+    ProfileSite("Threads", "Réseaux sociaux", "https://www.threads.net/@{u}"),
+    ProfileSite("Pinterest", "Réseaux sociaux", "https://www.pinterest.com/{u}/"),
+    ProfileSite("Tumblr", "Réseaux sociaux", "https://{u}.tumblr.com"),
+    ProfileSite("VK", "Réseaux sociaux", "https://vk.com/{u}"),
+    ProfileSite("Discord", "Réseaux sociaux", 'https://www.google.com/search?q=%22{u}%22+discord',
+                "Discord n'expose pas de profil public par pseudo → recherche web"),
+    # Messageries / contact
+    ProfileSite("Telegram", "Messageries", "https://t.me/{u}"),
+    # Vidéo / streaming
+    ProfileSite("YouTube", "Vidéo", "https://www.youtube.com/@{u}"),
+    ProfileSite("Twitch", "Vidéo", "https://www.twitch.tv/{u}"),
+    ProfileSite("Vimeo", "Vidéo", "https://vimeo.com/{u}"),
+    ProfileSite("Dailymotion", "Vidéo", "https://www.dailymotion.com/{u}"),
+    # Jeux vidéo
+    ProfileSite("Steam", "Jeux vidéo", "https://steamcommunity.com/id/{u}"),
+    ProfileSite("Roblox", "Jeux vidéo", "https://www.roblox.com/search/users?keyword={u}"),
+    ProfileSite("Xbox Gamertag", "Jeux vidéo", "https://xboxgamertag.com/search/{u}"),
+    ProfileSite("Epic / Fortnite (fortnitetracker)", "Jeux vidéo", "https://fortnitetracker.com/profile/all/{u}"),
+    ProfileSite("Chess.com", "Jeux vidéo", "https://www.chess.com/member/{u}"),
+    ProfileSite("Lichess", "Jeux vidéo", "https://lichess.org/@/{u}"),
+    # Musique / audio
+    ProfileSite("SoundCloud", "Musique", "https://soundcloud.com/{u}"),
+    ProfileSite("Spotify", "Musique", "https://open.spotify.com/user/{u}"),
+    ProfileSite("Bandcamp", "Musique", "https://{u}.bandcamp.com"),
+    ProfileSite("Last.fm", "Musique", "https://www.last.fm/user/{u}"),
+    # Photo / visuel
+    ProfileSite("Flickr", "Photo", "https://www.flickr.com/people/{u}"),
+    ProfileSite("500px", "Photo", "https://500px.com/p/{u}"),
+    ProfileSite("DeviantArt", "Photo", "https://www.deviantart.com/{u}"),
+    ProfileSite("Behance", "Photo", "https://www.behance.net/{u}"),
+    # Écriture / blog
+    ProfileSite("Medium", "Écriture", "https://medium.com/@{u}"),
+    ProfileSite("Substack", "Écriture", "https://{u}.substack.com"),
+    ProfileSite("Wattpad", "Écriture", "https://www.wattpad.com/user/{u}"),
+    # Développement
+    ProfileSite("GitHub", "Développement", "https://github.com/{u}"),
+    ProfileSite("GitLab", "Développement", "https://gitlab.com/{u}"),
+    ProfileSite("Replit", "Développement", "https://replit.com/@{u}"),
+    ProfileSite("Stack Overflow (recherche)", "Développement",
+                "https://stackoverflow.com/users?tab=Reputation&search={u}"),
+    # Créateurs / liens
+    ProfileSite("Patreon", "Créateurs", "https://www.patreon.com/{u}"),
+    ProfileSite("Ko-fi", "Créateurs", "https://ko-fi.com/{u}"),
+    ProfileSite("Linktree", "Créateurs", "https://linktr.ee/{u}"),
+    ProfileSite("Buy Me a Coffee", "Créateurs", "https://www.buymeacoffee.com/{u}"),
+    # Forums / communautés
+    ProfileSite("Reddit", "Communautés", "https://www.reddit.com/user/{u}"),
+    ProfileSite("Mastodon (recherche)", "Communautés", "https://mastodon.social/@{u}"),
+    ProfileSite("Bluesky", "Communautés", "https://bsky.app/profile/{u}.bsky.social"),
+    ProfileSite("Product Hunt", "Communautés", "https://www.producthunt.com/@{u}"),
+]
+
+
+def profile_links(username: str) -> list[tuple[str, str, str, str]]:
+    """Liens profil direct (name, category, url, note) pour un pseudo.
+
+    N'interroge aucun site : construit des URL à ouvrir soi-même. Le pseudo est
+    déjà restreint à des caractères sûrs pour une URL (USERNAME_RE).
+    """
+    u = username.strip().lstrip("@")
+    if not USERNAME_RE.match(u):
+        return []
+    return [(s.name, s.category, s.url.format(u=u), s.note) for s in DIRECT_PROFILE_SITES]
+
+
 def candidate_usernames(first_name: str, last_name: str) -> list[str]:
     """Pseudonymes courants dérivés du nom (variantes classiques)."""
     f = normalize_text(first_name).replace(" ", "")

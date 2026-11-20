@@ -17,7 +17,7 @@ from face_analyse.osint.images import reverse_image_links
 from face_analyse.osint.iplookup import IpInfo, lookup
 from face_analyse.osint.phone import PhoneInfo
 from face_analyse.osint.phone import investigate as phone_investigate
-from face_analyse.osint.usernames import PLATFORMS, Presence, check_usernames
+from face_analyse.osint.usernames import PLATFORMS, Presence, check_usernames, profile_links
 from face_analyse.ui.context import AppContext
 from face_analyse.ui.pages.common import Page, muted
 from face_analyse.ui.workers import run_async
@@ -125,6 +125,13 @@ class UsernameTrackerTab(QWidget):
         lay.addWidget(self.table, 1)
         lay.addWidget(muted("« Trouvé » signifie qu'un compte porte ce pseudo, pas qu'il appartient à "
                             "une personne précise. Le contenu des profils n'est pas récupéré."))
+        self.links_view = QTextBrowser()
+        self.links_view.setOpenExternalLinks(True)
+        self.links_view.setMaximumHeight(220)
+        self.links_view.document().setDefaultStyleSheet('a{color:#ffffff;text-decoration:none}')
+        lay.addWidget(self.links_view)
+        lay.addWidget(muted("Liens profil direct : ces réseaux (Instagram, TikTok, Snapchat, LinkedIn, Discord…) "
+                            "interdisent la collecte automatique — ouvre-les toi-même dans le navigateur."))
         self._rows: list = []
 
     def run(self):
@@ -134,6 +141,7 @@ class UsernameTrackerTab(QWidget):
         self.btn.setEnabled(False)
         self.table.setRowCount(0)
         self.summary.setText("Recherche en cours…")
+        self._show_profile_links(username)
         http = PoliteSession(timeout=self.ctx.settings.osint.timeout_s)
         run_async(lambda progress: check_usernames(http, [username], PLATFORMS,
                                                     progress=lambda d, n: progress("Username Tracker", d, n)),
@@ -170,6 +178,22 @@ class UsernameTrackerTab(QWidget):
     def _open(self, row: int, _col: int):
         if 0 <= row < len(self._rows) and self._rows[row].presence == Presence.FOUND:
             QDesktopServices.openUrl(QUrl(self._rows[row].url))
+
+    def _show_profile_links(self, username: str):
+        links = profile_links(username)
+        if not links:
+            self.links_view.setHtml("")
+            return
+        by_cat: dict[str, list[tuple[str, str, str, str]]] = {}
+        for name, cat, url, note in links:
+            by_cat.setdefault(cat, []).append((name, cat, url, note))
+        parts = [f"<p style='color:#888'>Liens profil direct « {escape(username)} » "
+                 f"— {len(links)} réseaux, à ouvrir dans le navigateur :</p>"]
+        for cat, items in by_cat.items():
+            chips = " · ".join(
+                f"<a href='{escape(u)}' title='{escape(nt)}'>{escape(nm)}</a>" for nm, _c, u, nt in items)
+            parts.append(f"<p><span style='color:#666'>{escape(cat.upper())}</span><br>{chips}</p>")
+        self.links_view.setHtml("".join(parts))
 
 
 def _email_html(e: EmailInfo) -> str:
