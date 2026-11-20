@@ -14,7 +14,34 @@ qui est connecté, depuis quelle machine et quelle IP.
 > moment de la connexion (écran de consentement). Ne retirez pas cet écran : la
 > collecte d'IP, de machine et d'activité sans information est illégale.
 
-## Démarrage rapide
+## Le plus simple : lancement local en 1 commande
+
+```bash
+cd server
+python start_local.py
+```
+
+(Sous Windows : double-cliquez **`start_server.bat`**. Sous macOS/Linux : `./start_server.sh`.)
+
+Au premier lancement, le script crée tout seul votre clé secrète et votre **compte
+administrateur**, puis affiche :
+
+```
+  Panneau d'administration :  http://localhost:8000/admin
+  e-mail       : admin@local
+  mot de passe : (généré, affiché dans le terminal)
+  À coller dans l'app (SETTINGS → Serveur de comptes) :  http://localhost:8000
+```
+
+Ouvrez le panel dans votre navigateur, connectez-vous, et dans l'application de
+bureau collez `http://localhost:8000` dans **SETTINGS → Serveur de comptes**. Vos
+identifiants sont conservés dans `fa_server_data/local_config.json`.
+
+> **Tester depuis votre téléphone / un autre PC du même Wi-Fi :**
+> `FA_HOST=0.0.0.0 python start_local.py` — le script affiche alors aussi l'adresse
+> « réseau local » (ex. `http://192.168.1.20:8000`) à utiliser sur l'autre appareil.
+
+## Démarrage manuel (variables d'environnement)
 
 ```bash
 cd server
@@ -57,6 +84,52 @@ Dans l'app (SETTINGS → Compte & accès) ou via la variable `FACE_ANALYSE_SERVE
 indiquez l'URL du serveur. L'app exigera alors une connexion et enverra
 battements de cœur et événements. Sans URL de serveur, l'app fonctionne en mode
 autonome (sans comptes).
+
+Pour que l'app **distribuée** exige la connexion sans réglage, mettez l'URL de
+votre serveur dans `face_analyse/resources/deployment.json` **avant de compiler
+l'exe** :
+
+```json
+{ "server_url": "https://panel.mondomaine.fr", "force_login": true }
+```
+
+## Passer à un vrai site accessible partout (domaine + HTTPS)
+
+Le lancement local ne marche que sur votre machine. Pour que vos utilisateurs s'y
+connectent depuis n'importe où, il faut un serveur accessible sur Internet. Marche
+à suivre, quand vous serez prêt :
+
+1. **Un petit serveur (VPS)** chez un hébergeur (Hetzner, OVH, Scaleway, DigitalOcean…),
+   ~4–6 €/mois, Ubuntu. Vous obtenez une IP publique.
+2. **Un nom de domaine** (OVH, Namecheap, Cloudflare…), ~10 €/an. Créez un
+   enregistrement **A** `panel.votredomaine.fr → l'IP du VPS`.
+3. **HTTPS automatique avec Caddy** (le plus simple) sur le VPS — fichier `Caddyfile` :
+
+   ```
+   panel.votredomaine.fr {
+       reverse_proxy 127.0.0.1:8000
+   }
+   ```
+
+   Caddy obtient et renouvelle le certificat TLS tout seul.
+4. **Lancer le serveur** sur le VPS (derrière Caddy) avec vos variables :
+
+   ```bash
+   export FA_SECRET_KEY="…stable et secret…"
+   export FA_ADMIN_EMAIL="vous@exemple.com"
+   export FA_ADMIN_PASSWORD="…"
+   export FA_PUBLIC_URL="https://panel.votredomaine.fr"
+   export FA_TRUST_PROXY=true
+   python run.py        # écoute sur 127.0.0.1:8000, Caddy expose le HTTPS
+   ```
+
+   (Pour qu'il tourne en permanence : un service **systemd**, ou `tmux`/`screen` pour commencer.)
+5. **OAuth** : dans les consoles Discord/Google, mettez les URL de redirection
+   `https://panel.votredomaine.fr/auth/discord/callback` et `…/auth/google/callback`.
+6. **Dans l'app** : `deployment.json` → `"server_url": "https://panel.votredomaine.fr"`, recompilez l'exe.
+
+Dites-moi quand vous en êtes là : je peux vous écrire le service systemd, le
+`Caddyfile` complet et un script d'installation pour le VPS.
 
 ## Sécurité de déploiement
 * Mettez-le **derrière HTTPS** (reverse-proxy : Caddy, Nginx, Traefik) et activez `FA_TRUST_PROXY`.
