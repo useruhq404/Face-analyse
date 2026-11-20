@@ -5,7 +5,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from face_analyse.loadtest.engine import LoadConfig, Results, is_local_target, run
+from face_analyse.loadtest.engine import (LoadConfig, Results, combined_latencies, is_local_target, run, run_many)
 
 
 def _ok_transport(status=200):
@@ -41,6 +41,16 @@ def test_run_records_errors_and_status():
     res2 = run(LoadConfig(url="http://127.0.0.1/", concurrency=5, requests=30),
                transport=httpx.MockTransport(boom))
     assert res2.failed == 30 and res2.ok == 0
+
+
+def test_run_many_targets_simultaneously():
+    cfgs = [LoadConfig(url=f"http://127.0.0.1/{i}", concurrency=8, requests=120) for i in range(3)]
+    pairs = run_many(cfgs, transport=_ok_transport())
+    assert len(pairs) == 3
+    assert all(res.total == 120 and res.ok == 120 for _cfg, res in pairs)
+    agg = combined_latencies(pairs)
+    assert agg.total == 360 and agg.status.get(200) == 360
+    assert len(agg.latencies) == 360
 
 
 def test_percentiles_and_histogram():

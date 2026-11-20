@@ -12,10 +12,10 @@ déni de service, illégal (France : art. 323-2).
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+from PySide6.QtWidgets import (QCheckBox, QComboBox, QFormLayout, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton,
                                QSpinBox, QVBoxLayout, QWidget)
 
-from face_analyse.loadtest.engine import LoadConfig, Results, is_local_target, run
+from face_analyse.loadtest.engine import LoadConfig, combined_latencies, is_local_target, run_many
 from face_analyse.ui.context import AppContext
 from face_analyse.ui.pages.common import Page, card, muted, section_label
 from face_analyse.ui.widgets.charts import Histogram
@@ -36,8 +36,10 @@ class LoadTestPage(Page):
         cfg_card, cfg = card()
         cfg.addWidget(section_label("Configuration"))
         form = QFormLayout()
-        self.url = QLineEdit(placeholderText="http://127.0.0.1:8090/")
-        form.addRow("Cible (URL)", self.url)
+        self.urls = QPlainTextEdit()
+        self.urls.setPlaceholderText("une URL par ligne — testées en même temps\nhttp://127.0.0.1:8090/\nhttp://127.0.0.1:8091/")
+        self.urls.setFixedHeight(84)
+        form.addRow("Cibles", self.urls)
         self.method = QComboBox()
         self.method.addItems(["GET", "POST", "HEAD", "PUT"])
         form.addRow("Méthode", self.method)
@@ -97,27 +99,35 @@ class LoadTestPage(Page):
         self.requests.setEnabled(not by_duration)
 
     def run_test(self):
-        url = self.url.text().strip()
-        if not url.startswith(("http://", "https://")):
-            self.ctx.notify.emit("Saisissez une URL http(s) valide.", "warning")
+        urls = [u.strip() for u in self.urls.toPlainText().splitlines() if u.strip()]
+        if not urls:
+            self.ctx.notify.emit("Saisissez au moins une URL (une par ligne).", "warning")
             return
-        if not is_local_target(url) and not self.authorized.isChecked():
-            self.ctx.notify.emit("Cible non locale : cochez « Je possède cette cible / suis autorisé » "
+        bad = [u for u in urls if not u.startswith(("http://", "https://"))]
+        if bad:
+            self.ctx.notify.emit(f"URL invalide : {bad[0]} (doit commencer par http:// ou https://).", "warning")
+            return
+        non_local = [u for u in urls if not is_local_target(u)]
+        if non_local and not self.authorized.isChecked():
+            self.ctx.notify.emit(f"{len(non_local)} cible(s) non locale(s) : cochez « je possède / suis autorisé » "
                                  "— sinon c'est un déni de service illégal.", "warning")
             return
-        cfg = LoadConfig(
-            url=url, method=self.method.currentText(), concurrency=self.concurrency.value(),
-            timeout=float(self.timeout.value()), ramp=float(self.ramp.value()), rps=self.rps.value(),
-        )
-        if self.mode.currentIndex() == 0:
-            cfg.duration = float(self.duration.value())
-        else:
-            cfg.requests = self.requests.value()
+
+        cfgs = []
+        for u in urls:
+            cfg = LoadConfig(url=u, method=self.method.currentText(), concurrency=self.concurrency.value(),
+                             timeout=float(self.timeout.value()), ramp=float(self.ramp.value()), rps=self.rps.value())
+            if self.mode.currentIndex() == 0:
+                cfg.duration = float(self.duration.value())
+            else:
+                cfg.requests = self.requests.value()
+            cfgs.append(cfg)
+
         self.run_btn.setEnabled(False)
-        self.summary.setText("Test en cours…")
+        self.summary.setText(f"Test de {len(cfgs)} cible(s) en cours…")
         self.ctx.busy.emit("Test de charge…", 0, 0)
-        run_async(run, cfg, on_done=self._done, on_error=self._error)
-        self.ctx.log_event("loadtest", "run", {"concurrency": cfg.concurrency, "local": is_local_target(url)})
+        run_async(run_many, cfgs, on_done=self._done, on_error=self._error)
+        self.ctx.log_event("loadtest", "run", {"targets": len(cfgs), "concurrency": self.concurrency.value()})
 
     def _error(self, msg: str):
         self.run_btn.setEnabled(True)
@@ -125,25 +135,27 @@ class LoadTestPage(Page):
         self.summary.setText(msg)
         self.ctx.notify.emit(msg, "error")
 
-    def _done(self, res: Results):
+    def _done(self, pairs):
         self.run_btn.setEnabled(True)
         self.ctx.busy.emit("", -1, -1)
-        lines = [
-            f"débit        {res.rps:,.1f} req/s",
-            f"requêtes     {res.total}   (ok {res.ok}, erreurs {res.failed})",
-            f"durée        {res.duration:.1f} s",
-        ]
-        if res.latencies:
-            lines.append(f"latence ms   moy {res.mean_latency:.1f} · p50 {res.pct(50):.1f} · "
-                         f"p90 {res.pct(90):.1f} · p99 {res.pct(99):.1f} · max {max(res.latencies):.1f}")
-        if res.status:
-            lines.append("codes        " + "  ".join(f"{c}:{n}" for c, n in sorted(res.status.items())))
-        if res.errors:
-            lines.append("erreurs      " + "  ".join(f"{k}:{v}" for k, v in res.errors.items()))
-        if res.failed and res.failed / max(res.total, 1) > 0.05:
-            lines.append("⚠ beaucoup d'erreurs : la cible sature, ralentit ou limite le débit.")
-        self.summary.setText("\n".join(lines))
-        self.hist.set_data(res.latency_histogram(12))
+        blocks = []
+        for cfg, res in pairs:
+            lines = [f"▸ {cfg.url}",
+                     f"    débit {res.rps:,.1f} req/s · requêtes {res.total} (ok {res.ok}, err {res.failed})"]
+            if res.latencies:
+                lines.append(f"    latence ms  p50 {res.pct(50):.1f} · p90 {res.pct(90):.1f} · "
+                             f"p99 {res.pct(99):.1f} · max {max(res.latencies):.1f}")
+            if res.status:
+                lines.append("    codes  " + "  ".join(f"{c}:{n}" for c, n in sorted(res.status.items())))
+            if res.errors:
+                lines.append("    erreurs  " + "  ".join(f"{k}:{v}" for k, v in res.errors.items()))
+            if res.failed and res.failed / max(res.total, 1) > 0.05:
+                lines.append("    ⚠ saturation / ralentissement / limite de débit")
+            blocks.append("\n".join(lines))
+        agg = combined_latencies(pairs)
+        header = f"{len(pairs)} cible(s) · {agg.total} requêtes au total\n"
+        self.summary.setText(header + "\n\n".join(blocks))
+        self.hist.set_data(agg.latency_histogram(12))
         self.ctx.repo.log_history("loadtest", "run",
-                                  f"Stress test : {res.total} req, {res.rps:.0f} req/s, p99 {res.pct(99):.0f} ms",
-                                  {"rps": round(res.rps, 1), "total": res.total})
+                                  f"Stress test : {len(pairs)} cible(s), {agg.total} requêtes au total",
+                                  {"targets": len(pairs), "total": agg.total})

@@ -173,3 +173,27 @@ async def _report_progress(res, cfg, start, stop_at, tasks, progress):
 def run(cfg: LoadConfig, transport=None, progress=None) -> Results:
     """Version synchrone (à appeler dans un thread de travail)."""
     return asyncio.run(run_async(cfg, transport=transport, progress=progress))
+
+
+async def run_many_async(cfgs: list[LoadConfig], transport=None) -> list[tuple[LoadConfig, Results]]:
+    """Teste plusieurs cibles EN MÊME TEMPS (un même boucle d'événements)."""
+    results = await asyncio.gather(*[run_async(c, transport=transport) for c in cfgs])
+    return list(zip(cfgs, results))
+
+
+def run_many(cfgs: list[LoadConfig], transport=None) -> list[tuple[LoadConfig, Results]]:
+    """Version synchrone de run_many_async (à appeler dans un thread de travail)."""
+    return asyncio.run(run_many_async(cfgs, transport=transport))
+
+
+def combined_latencies(pairs: list[tuple[LoadConfig, Results]]) -> Results:
+    """Agrège les latences de toutes les cibles (pour un histogramme global)."""
+    agg = Results()
+    for _cfg, res in pairs:
+        agg.latencies.extend(res.latencies)
+        for c, n in res.status.items():
+            agg.status[c] = agg.status.get(c, 0) + n
+        for k, n in res.errors.items():
+            agg.errors[k] = agg.errors.get(k, 0) + n
+        agg.duration = max(agg.duration, res.duration)
+    return agg
