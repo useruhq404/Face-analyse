@@ -7,3 +7,4 @@ cryptography>=42
 requests>=2.31
 anthropic>=0.70                       # assistant IA (facultatif à l'exécution)
 onnxruntime>=1.17                     # modèles ONNX personnalisés (facultatif)
+phonenumbers>=8.13                     # analyse OSINT de numéros (hors ligne)

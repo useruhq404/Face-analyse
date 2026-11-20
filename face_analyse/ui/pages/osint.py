@@ -50,9 +50,12 @@ class OsintPage(Page):
         self.ai_suggest_btn.clicked.connect(self.ai_suggest)
         self.ai_summary_btn = QPushButton("IA · SYNTHÈSE")
         self.ai_summary_btn.clicked.connect(self.ai_summarize)
-        self.export_btn = QPushButton("EXPORTER LE RAPPORT")
+        self.export_btn = QPushButton("EXPORTER (HTML/JSON)")
         self.export_btn.clicked.connect(self.export)
-        for w in (self.search_btn, self.check_handles, self.ai_suggest_btn, self.ai_summary_btn, self.export_btn):
+        self.pdf_btn = QPushButton("EXPORTER PDF")
+        self.pdf_btn.clicked.connect(self.export_pdf)
+        for w in (self.search_btn, self.check_handles, self.ai_suggest_btn, self.ai_summary_btn,
+                  self.export_btn, self.pdf_btn):
             bar.addWidget(w)
         bar.addStretch(1)
         self.root.addLayout(bar)
@@ -73,6 +76,7 @@ class OsintPage(Page):
         self.table.cellDoubleClicked.connect(self._open_row)
         self.detail = QTextBrowser()
         self.detail.setOpenExternalLinks(True)
+        self.detail.document().setDefaultStyleSheet('a{color:#ffffff;text-decoration:underline}')
         self.detail.setMaximumHeight(130)
         self.table.currentCellChanged.connect(lambda r, *_: self._show_detail(r))
         res = QWidget()
@@ -120,6 +124,7 @@ class OsintPage(Page):
         self.ai_suggest_btn.setEnabled(on)
         self.ai_summary_btn.setEnabled(on and self.report is not None)
         self.export_btn.setEnabled(on and self.report is not None)
+        self.pdf_btn.setEnabled(on and self.report is not None)
 
     def _secrets(self) -> dict[str, str]:
         return {"openalex_api_key": self.ctx.repo.get_secret("openalex_api_key")}
@@ -281,3 +286,21 @@ class OsintPage(Page):
         self.ctx.repo.log_history("osint", "report", f"Rapport exporté : {html_path.name}", {"html": str(html_path), "json": str(json_path)})
         self.ctx.notify.emit(f"Rapport enregistré : {html_path}", "success")
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(html_path)))
+
+    def export_pdf(self):
+        if self.report is None:
+            return
+        from face_analyse.core.paths import reports_dir
+        from face_analyse.osint.pdf import save_pdf
+        from face_analyse.osint.report import _slug
+
+        stamp = self.report.started_at.replace(":", "").replace("-", "").replace("+0000", "")[:15]
+        path = reports_dir() / f"osint_{_slug(self.report.query.full_name)}_{stamp}.pdf"
+        try:
+            save_pdf(self.report, path)
+        except Exception as exc:  # noqa: BLE001 - l'export ne doit pas planter l'app
+            self.ctx.notify.emit(f"Export PDF impossible : {exc}", "error")
+            return
+        self.ctx.repo.log_history("osint", "report_pdf", f"Rapport PDF exporté : {path.name}", {"pdf": str(path)})
+        self.ctx.notify.emit(f"PDF enregistré : {path}", "success")
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
