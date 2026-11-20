@@ -6,9 +6,10 @@ from html import escape
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import (QHBoxLayout, QHeaderView, QLineEdit, QPushButton, QTableWidget, QTableWidgetItem,
-                               QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QHeaderView, QLineEdit, QPlainTextEdit, QPushButton, QSpinBox,
+                               QTableWidget, QTableWidgetItem, QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
 
+from face_analyse.osint import generators as gen
 from face_analyse.osint.email import EmailInfo
 from face_analyse.osint.email import investigate as email_investigate
 from face_analyse.osint.http import PoliteSession
@@ -358,6 +359,112 @@ class ReverseImageTab(QWidget):
             self.ctx.log_event("image", "reverse_links", {})
 
 
+class GeneratorsTab(QWidget):
+    """Générateurs de données de test (IP, IBAN factice, UUID, MAC) + décodeur d'ID Discord."""
+
+    def __init__(self, ctx: AppContext, parent=None):
+        super().__init__(parent)
+        self.ctx = ctx
+        lay = QVBoxLayout(self)
+
+        bar = QHBoxLayout()
+        self.kind = QComboBox()
+        self.kind.addItems(["IPv4 publiques", "IPv4 privées", "IPv6", "IBAN factice", "UUID v4", "Adresse MAC"])
+        self.kind.currentIndexChanged.connect(self._kind_changed)
+        self.country = QComboBox()
+        self.country.addItems(sorted(gen.IBAN_LENGTHS))
+        self.country.setCurrentText("FR")
+        self.country.setVisible(False)
+        self.count = QSpinBox(minimum=1, maximum=500, value=10)
+        self.gen_btn = QPushButton("GÉNÉRER")
+        self.gen_btn.setObjectName("Primary")
+        self.gen_btn.clicked.connect(self.generate)
+        self.copy_btn = QPushButton("COPIER")
+        self.copy_btn.clicked.connect(self._copy)
+        bar.addWidget(self.kind)
+        bar.addWidget(self.country)
+        bar.addWidget(self.count)
+        bar.addWidget(self.gen_btn)
+        bar.addWidget(self.copy_btn)
+        bar.addStretch(1)
+        lay.addLayout(bar)
+
+        self.out = QPlainTextEdit()
+        self.out.setReadOnly(True)
+        self.out.setObjectName("Mono")
+        lay.addWidget(self.out, 1)
+        lay.addWidget(muted("Données de TEST calculées hors ligne. Un IBAN a une clé mod-97 valide mais ne "
+                            "correspond à aucun compte réel ; une IP tirée au hasard ne désigne personne. "
+                            "Pour tester des formulaires/parseurs — jamais pour frauder ou usurper."))
+
+        # ---- décodeur Discord
+        dbar = QHBoxLayout()
+        self.discord_in = QLineEdit(placeholderText="ID Discord (snowflake) — utilisateur, serveur ou message")
+        self.discord_in.returnPressed.connect(self.decode_discord)
+        self.discord_btn = QPushButton("DÉCODER")
+        self.discord_btn.setObjectName("Primary")
+        self.discord_btn.clicked.connect(self.decode_discord)
+        dbar.addWidget(self.discord_in, 1)
+        dbar.addWidget(self.discord_btn)
+        lay.addLayout(dbar)
+        self.discord_out = QTextBrowser()
+        self.discord_out.setMaximumHeight(130)
+        self.discord_out.document().setDefaultStyleSheet("td{padding-right:16px}")
+        lay.addWidget(self.discord_out)
+        lay.addWidget(muted("Décodeur d'ID Discord : la date de création est encodée dans l'identifiant "
+                            "(information publique). N'interroge pas Discord, ne révèle ni le nom ni le titulaire."))
+
+    def _kind_changed(self):
+        is_iban = self.kind.currentText() == "IBAN factice"
+        self.country.setVisible(is_iban)
+
+    def generate(self):
+        k = self.kind.currentText()
+        n = self.count.value()
+        try:
+            if k == "IPv4 publiques":
+                vals = gen.random_ipv4(n, public_only=True)
+            elif k == "IPv4 privées":
+                vals = gen.random_ipv4_in("10.0.0.0/8", n)
+            elif k == "IPv6":
+                vals = gen.random_ipv6(n)
+            elif k == "IBAN factice":
+                vals = gen.fake_iban(self.country.currentText(), n)
+            elif k == "UUID v4":
+                vals = gen.random_uuid(n)
+            else:
+                vals = gen.random_mac(n)
+        except Exception as exc:  # noqa: BLE001
+            self.ctx.notify.emit(str(exc), "error")
+            return
+        self.out.setPlainText("\n".join(vals))
+        self.ctx.log_event("tools", "generate", {"kind": k, "count": len(vals)})
+
+    def _copy(self):
+        from PySide6.QtWidgets import QApplication
+        QApplication.clipboard().setText(self.out.toPlainText())
+        self.ctx.notify.emit("Copié dans le presse-papier.", "success")
+
+    def decode_discord(self):
+        raw = self.discord_in.text().strip()
+        if not raw:
+            return
+        try:
+            info = gen.decode_discord_id(raw)
+        except (ValueError, OverflowError):
+            self.discord_out.setHtml("<p style='color:#ff9a9a'>Identifiant invalide (doit être numérique).</p>")
+            return
+        local = info.created_at.astimezone()
+        rows = [("ID", str(info.snowflake)),
+                ("Créé le (UTC)", info.created_at.strftime("%Y-%m-%d %H:%M:%S")),
+                ("Créé le (local)", local.strftime("%d/%m/%Y %H:%M:%S")),
+                ("Ancienneté", f"{info.age_days} jours"),
+                ("Worker / Process / Incrément", f"{info.worker_id} / {info.process_id} / {info.increment}")]
+        body = "".join(f"<tr><td style='color:#888'>{escape(k)}</td><td>{escape(v)}</td></tr>" for k, v in rows)
+        self.discord_out.setHtml(f"<table cellspacing=3>{body}</table>")
+        self.ctx.log_event("tools", "discord_decode", {})
+
+
 class ToolsPage(Page):
     def __init__(self, ctx: AppContext, parent=None):
         super().__init__("OUTILS",
@@ -370,4 +477,5 @@ class ToolsPage(Page):
         tabs.addTab(EmailTab(ctx), "E-MAIL")
         tabs.addTab(PhoneTab(ctx), "TÉLÉPHONE")
         tabs.addTab(ReverseImageTab(ctx), "IMAGE INVERSÉE")
+        tabs.addTab(GeneratorsTab(ctx), "GÉNÉRATEURS")
         self.root.addWidget(tabs, 1)
