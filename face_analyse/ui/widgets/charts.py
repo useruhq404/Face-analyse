@@ -73,6 +73,60 @@ class ActivityDots(QWidget):
         p.end()
 
 
+class Histogram(QWidget):
+    """Histogramme vertical monochrome : [(libellé, effectif)]."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._data: list[tuple[str, int]] = []
+        self.setMinimumHeight(190)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def set_data(self, data: list[tuple[str, int]]) -> None:
+        self._data = list(data)
+        self.update()
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.fillRect(self.rect(), QColor(theme.PANEL))
+        if not self._data:
+            p.setPen(QColor(theme.MUTED))
+            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "—")
+            return
+        peak = max(v for _, v in self._data) or 1
+        n = len(self._data)
+        pad_l, pad_r, pad_t, pad_b = 10, 10, 18, 40
+        area_w = self.width() - pad_l - pad_r
+        area_h = self.height() - pad_t - pad_b
+        slot = area_w / n
+        bw = slot * 0.64
+        count_font = QFont(theme.mono_font_family(), 7)
+        label_font = QFont(theme.mono_font_family(), 6)
+        for i, (label, value) in enumerate(self._data):
+            x = pad_l + slot * i + (slot - bw) / 2
+            h = area_h * value / peak
+            top = pad_t + area_h - h
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor(28, 28, 28))
+            p.drawRect(QRectF(x, pad_t, bw, area_h))
+            p.setBrush(QColor(theme.WHITE) if value == peak else QColor(210, 210, 210))
+            p.drawRect(QRectF(x, top, bw, max(1.0, h)))
+            if value:
+                p.setPen(QColor(theme.MUTED))
+                p.setFont(count_font)
+                p.drawText(QRectF(x - slot * 0.18, top - 15, bw + slot * 0.36, 13),
+                           Qt.AlignmentFlag.AlignHCenter, str(value))
+            p.setPen(QColor(theme.MUTED))
+            p.setFont(label_font)
+            p.save()
+            p.translate(x + bw / 2, self.height() - pad_b + 4)
+            p.rotate(35)
+            p.drawText(0, 0, label[:14])
+            p.restore()
+        p.end()
+
+
 class BarList(QWidget):
     """Barres horizontales fines : (label, valeur). Pour la répartition par module."""
 

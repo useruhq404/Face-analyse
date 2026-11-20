@@ -26,10 +26,11 @@ MODULES = [
     ("database", "03", "FACE DATABASE", "Personnes, photos, empreintes chiffrées"),
     ("osint", "04", "OSINT SEARCH", "Sources publiques, recherche par nom"),
     ("graph", "05", "INTEL GRAPH", "Graphe relationnel interactif"),
-    ("tools", "06", "IP · USERNAME", "IP Lookup, Username Tracker"),
-    ("history", "07", "HISTORY", "Journal local horodaté"),
-    ("guide", "08", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
-    ("settings", "09", "SETTINGS", "Moteur, compte, données"),
+    ("datalab", "06", "DATA LAB", "Import CSV/JSON/TXT, statistiques"),
+    ("tools", "07", "IP · USERNAME", "IP Lookup, Username Tracker"),
+    ("history", "08", "HISTORY", "Journal local horodaté"),
+    ("guide", "09", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
+    ("settings", "10", "SETTINGS", "Moteur, compte, données"),
 ]
 
 _MODULE_LABELS = {

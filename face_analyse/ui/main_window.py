@@ -15,6 +15,7 @@ from face_analyse.ui.pages.analysis import AnalysisPage
 from face_analyse.ui.pages.camera import CameraPage
 from face_analyse.ui.pages.common import Page
 from face_analyse.ui.pages.database import DatabasePage
+from face_analyse.ui.pages.datalab import DataLabPage
 from face_analyse.ui.pages.graph import IntelligenceGraphPage
 from face_analyse.ui.pages.guide import GuidePage
 from face_analyse.ui.pages.history import HistoryPage
@@ -33,6 +34,7 @@ NAV = [
     ("database", "FACE DATABASE", DatabasePage),
     ("osint", "OSINT SEARCH", OsintPage),
     ("graph", "INTEL GRAPH", IntelligenceGraphPage),
+    ("datalab", "DATA LAB", DataLabPage),
     ("tools", "IP · USERNAME", ToolsPage),
     ("history", "HISTORY", HistoryPage),
     ("guide", "GUIDE / INFO", GuidePage),
