@@ -8,7 +8,7 @@ from dataclasses import asdict
 from html import escape
 from pathlib import Path
 
-from face_analyse import __app_name__, __author__, __version__
+from face_analyse import __app_name__, __signature__, __version__
 from face_analyse.core.paths import reports_dir
 from face_analyse.osint.models import OsintReport
 
@@ -60,7 +60,7 @@ def render_html(rep: OsintReport) -> str:
     return f"""<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Rapport OSINT — {escape(q.full_name)}</title>
 <style>{_CSS}</style></head><body><main>
-<h1>{escape(__app_name__)}</h1><div class="sig">FAIT PAR {escape(__author__.upper())} · v{__version__}</div>
+<h1>{escape(__app_name__)}</h1><div class="sig">{escape(__signature__)} · v{__version__}</div>
 <h2>Rapport OSINT</h2>
 <p>Recherche : <b>{escape(q.full_name)}</b>{(' · ' + escape(q.city)) if q.city else ''}
 {(' · mots-clés : ' + escape(q.extra_keywords)) if q.extra_keywords else ''}<br>

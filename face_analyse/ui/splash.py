@@ -9,10 +9,11 @@ from PySide6.QtGui import QColor, QFont, QKeyEvent, QPixmap
 from PySide6.QtWidgets import (QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton,
                                QVBoxLayout, QWidget)
 
-from face_analyse import __app_name__, __author__, __version__
+from face_analyse import __app_name__, __signature__, __version__
 from face_analyse.core.paths import resource_path
 from face_analyse.ui import theme
 from face_analyse.ui.widgets.dot_field import DotField
+from face_analyse.ui.widgets.pixel_title import PixelTitle
 
 #: (clé de page, libellé) — l'ordre définit les raccourcis 1 à 6.
 MENU = [
@@ -73,10 +74,7 @@ class WelcomeWindow(QWidget):
         root.addLayout(top)
         root.addStretch(3)
 
-        self.title = QLabel(__app_name__)
-        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title.setFont(theme.title_font(30))
-        self.title.setStyleSheet(f"color: {theme.WHITE}; background: transparent;")
+        self.title = PixelTitle(__app_name__, pixel=4, gap=1, max_drip=7)
         glow = QGraphicsDropShadowEffect(self.title)
         glow.setBlurRadius(28)
         glow.setOffset(0, 0)
@@ -84,14 +82,12 @@ class WelcomeWindow(QWidget):
         self.title.setGraphicsEffect(glow)
         self._glow = glow
 
-        self.signature = QLabel(f"fait par {__author__}")
+        self.signature = QLabel(__signature__)
         self.signature.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        sig_font = QFont(theme.ui_font_family(), 8)
-        sig_font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 4)
-        self.signature.setFont(sig_font)
-        self.signature.setStyleSheet(f"color: {theme.MUTED}; background: transparent;")
+        self.signature.setStyleSheet(f"color: {theme.MUTED}; background: transparent; font-size: 6pt;"
+                                     f"font-family: '{theme.mono_font_family()}'; letter-spacing: 2px;")
 
-        root.addWidget(self.title)
+        root.addWidget(self.title, 0, Qt.AlignmentFlag.AlignHCenter)
         root.addSpacing(2)
         root.addWidget(self.signature)
         root.addStretch(2)

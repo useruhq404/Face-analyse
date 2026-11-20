@@ -7,7 +7,7 @@ from PySide6.QtGui import QCloseEvent, QKeySequence, QPixmap, QShortcut
 from PySide6.QtWidgets import (QButtonGroup, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QMainWindow,
                                QProgressBar, QPushButton, QStackedWidget, QStatusBar, QVBoxLayout, QWidget)
 
-from face_analyse import __app_name__, __author__, __version__
+from face_analyse import __app_name__, __signature__, __version__
 from face_analyse.core.paths import resource_path
 from face_analyse.ui import theme
 from face_analyse.ui.context import AppContext
@@ -19,6 +19,7 @@ from face_analyse.ui.pages.history import HistoryPage
 from face_analyse.ui.pages.osint import OsintPage
 from face_analyse.ui.pages.settings import SettingsPage
 from face_analyse.ui.widgets.dot_field import DotField
+from face_analyse.ui.widgets.pixel_title import PixelTitle
 from face_analyse.ui.widgets.toast import ToastHost
 
 NAV = [
@@ -35,7 +36,7 @@ class MainWindow(QMainWindow):
     def __init__(self, ctx: AppContext):
         super().__init__()
         self.ctx = ctx
-        self.setWindowTitle(f"{__app_name__} — fait par {__author__}")
+        self.setWindowTitle(f"{__app_name__} — {__signature__}")
         self.resize(1360, 840)
         self.setMinimumSize(1080, 680)
 
@@ -54,12 +55,15 @@ class MainWindow(QMainWindow):
         sl = QVBoxLayout(side)
         sl.setContentsMargins(0, 26, 0, 18)
         sl.setSpacing(2)
-        brand = QLabel(__app_name__)
-        brand.setFont(theme.title_font(13))
-        brand.setStyleSheet(f"color: {theme.WHITE}; padding-left: 22px; background: transparent;")
-        sig = QLabel(f"fait par {__author__}")
-        sig.setStyleSheet(f"color: {theme.MUTED}; font-size: 8pt; letter-spacing: 3px; padding-left: 22px; background: transparent;")
-        sl.addWidget(brand)
+        brand = PixelTitle(__app_name__, pixel=2, gap=1, max_drip=3, bold=False)
+        brand.setContentsMargins(0, 0, 0, 0)
+        sig = QLabel(__signature__)
+        sig.setStyleSheet(f"color: {theme.MUTED}; font-size: 6pt; letter-spacing: 1px; padding-left: 22px; background: transparent;")
+        brand_row = QHBoxLayout()
+        brand_row.setContentsMargins(22, 0, 0, 0)
+        brand_row.addWidget(brand)
+        brand_row.addStretch(1)
+        sl.addLayout(brand_row)
         sl.addWidget(sig)
         sl.addSpacing(28)
 
