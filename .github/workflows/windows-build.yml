@@ -1,0 +1,38 @@
+name: windows-build
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+      - name: Vérification des modèles
+        run: python scripts/download_models.py --verify-only
+      - name: Tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q
+      - name: Exécutable
+        run: pyinstaller --noconfirm face_analyse.spec
+      - name: Test de démarrage de l'exécutable (modèles + base)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist/FaceAnalyse/FaceAnalyse.exe -PassThru
+          Start-Sleep -Seconds 15
+          if ($p.HasExited) { Write-Error "L'exécutable s'est arrêté prématurément (code $($p.ExitCode))"; exit 1 }
+          Stop-Process -Id $p.Id
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FaceAnalyse-windows
+          path: dist/FaceAnalyse

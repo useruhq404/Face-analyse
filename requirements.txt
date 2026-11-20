@@ -1,0 +1,9 @@
+# FACE ANALYSE — dépendances d'exécution (Python 3.12+)
+PySide6>=6.7
+opencv-contrib-python-headless>=4.9   # FaceDetectorYN (YuNet) + FaceRecognizerSF (SFace)
+numpy>=1.26
+SQLAlchemy>=2.0
+cryptography>=42
+requests>=2.31
+anthropic>=0.70                       # assistant IA (facultatif à l'exécution)
+onnxruntime>=1.17                     # modèles ONNX personnalisés (facultatif)

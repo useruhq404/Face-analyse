@@ -1,0 +1,5 @@
+-r requirements.txt
+pytest>=8
+pyinstaller>=6.5
+Pillow>=10            # conversion de l'icône pour PyInstaller
+scikit-learn>=1.4     # téléchargement du jeu LFW pour le benchmark

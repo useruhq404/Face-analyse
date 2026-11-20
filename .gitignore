@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+build/
+dist/
+.pytest_cache/
+*.egg-info/
+# données locales (ne jamais versionner de biométrie)
+*.db
+*.db-wal
+*.db-shm
+vault.key
+settings.json
