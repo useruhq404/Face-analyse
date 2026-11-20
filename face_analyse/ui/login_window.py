@@ -45,9 +45,15 @@ class LoginWindow(QDialog):
         root.setContentsMargins(34, 26, 34, 26)
         title = PixelTitle("FACE ANALYSE", pixel=3, gap=1, max_drip=4)
         root.addWidget(title, 0, Qt.AlignmentFlag.AlignHCenter)
-        intro = QLabel("Connectez-vous pour utiliser FACE ANALYSE")
+        intro = QLabel(
+            "Outil à but strictement éducatif et de recherche autorisée. "
+            "Toute utilisation malveillante ou illégale est interdite. "
+            "En vous connectant, vous assumez l'entière responsabilité de votre usage : "
+            "l'éditeur décline toute responsabilité."
+        )
         intro.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        intro.setStyleSheet(f"color: {theme.FG}; letter-spacing: 1px;")
+        intro.setWordWrap(True)
+        intro.setStyleSheet(f"color: {theme.MUTED}; font-size: 8pt; letter-spacing: 0px;")
         root.addWidget(intro)
         self.server_lbl = QLabel(f"serveur : {auth.base_url}")
         self.server_lbl.setObjectName("Muted")
