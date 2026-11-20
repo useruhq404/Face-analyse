@@ -28,10 +28,11 @@ MODULES = [
     ("graph", "05", "INTEL GRAPH", "Graphe relationnel interactif"),
     ("datalab", "06", "DATA LAB", "Import CSV/JSON/TXT, statistiques"),
     ("timeline", "07", "TIMELINE", "Chronologie interactive des événements"),
-    ("tools", "08", "IP · USERNAME", "IP Lookup, Username Tracker"),
-    ("history", "09", "HISTORY", "Journal local horodaté"),
-    ("guide", "10", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
-    ("settings", "11", "SETTINGS", "Moteur, compte, données"),
+    ("tools", "08", "IP · USERNAME", "IP Lookup, Username Tracker, e-mail, téléphone"),
+    ("loadtest", "09", "STRESS TEST", "Test de charge de tes propres cibles"),
+    ("history", "10", "HISTORY", "Journal local horodaté"),
+    ("guide", "11", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
+    ("settings", "12", "SETTINGS", "Moteur, compte, données"),
 ]
 
 _MODULE_LABELS = {

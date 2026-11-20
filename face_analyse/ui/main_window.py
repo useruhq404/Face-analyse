@@ -19,6 +19,7 @@ from face_analyse.ui.pages.datalab import DataLabPage
 from face_analyse.ui.pages.graph import IntelligenceGraphPage
 from face_analyse.ui.pages.guide import GuidePage
 from face_analyse.ui.pages.history import HistoryPage
+from face_analyse.ui.pages.loadtest import LoadTestPage
 from face_analyse.ui.pages.osint import OsintPage
 from face_analyse.ui.pages.overview import OverviewPage
 from face_analyse.ui.pages.timeline import TimelinePage
@@ -38,6 +39,7 @@ NAV = [
     ("datalab", "DATA LAB", DataLabPage),
     ("timeline", "TIMELINE", TimelinePage),
     ("tools", "IP · USERNAME", ToolsPage),
+    ("loadtest", "STRESS TEST", LoadTestPage),
     ("history", "HISTORY", HistoryPage),
     ("guide", "GUIDE / INFO", GuidePage),
     ("settings", "SETTINGS", SettingsPage),
