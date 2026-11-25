@@ -29,13 +29,14 @@ face_analyse/
                scan ports LOCAL), crypto_tools (hash/encodage, hors ligne),
                generators (IP/IBAN factice/UUID/MAC + décodeur ID Discord), learn,
                metadata (EXIF/GPS d'image locale, corrélation d'appareil — Pillow)
+  lab/         CYBER LAB : contenu (plateformes/thèmes/checklist) + progression locale
   dataset/     loader (CSV/JSON/TXT) + analysis (stats, histogramme, doublons)
   graph/       model (nœuds/liens) + layout (force-dirigé numpy)
   auth/        client du serveur de comptes + device info
   ui/          theme, context (AppContext), splash, main_window, workers,
                widgets/ (dot_field, pixel_title, charts, command_palette, ...),
                pages/ (overview, analysis, camera, database, osint, graph, datalab,
-                       timeline, tools, console, loadtest, history, guide, settings)
+                       timeline, tools, console, loadtest, lab, history, guide, settings)
 server/        serveur FastAPI (comptes, sessions, panel admin, OAuth)
 docs/          BENCHMARK.md, LIMITES.md, ARCHITECTURE.md, benchmark.json
 ```

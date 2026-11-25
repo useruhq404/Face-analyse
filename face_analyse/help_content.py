@@ -107,6 +107,19 @@ TOPICS: list[HelpTopic] = [
          "Pour mesurer la charge de tes services, utilise le module STRESS TEST."],
     ),
     HelpTopic(
+        "lab", "CYBER LAB",
+        "Apprendre la sécurité offensive légalement, avec progression suivie.",
+        "Rassemble des plateformes de challenges (TryHackMe, Hack The Box, Root-Me, PortSwigger, picoCTF…), "
+        "un guide pour monter un lab isolé (VMs host-only + cibles volontairement vulnérables), des fiches par "
+        "thème (recon, web, réseau, privesc, crypto) avec les outils et ressources officiels, et une "
+        "méthodologie de pentest en checklist dont la progression est enregistrée en local.",
+        ["Ouvre les plateformes/ressources d'un clic (navigateur).",
+         "Coche les étapes de la méthodologie au fur et à mesure : c'est sauvegardé.",
+         "Monte d'abord ton lab isolé, puis pratique dessus."],
+        ["Ne pratique que sur tes machines, un lab isolé, ou avec une autorisation écrite.",
+         "Le DoS n'est étudié que côté défense ; viser un tiers est un délit."],
+    ),
+    HelpTopic(
         "account", "COMPTE & SÉCURITÉ",
         "Comprendre la connexion par compte et ce qui est journalisé.",
         "Si un serveur est configuré, l'app exige une connexion (e-mail, Discord ou Google). "

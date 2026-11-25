@@ -31,9 +31,10 @@ MODULES = [
     ("tools", "08", "IP · USERNAME", "IP, pseudo, e-mail, téléphone, générateurs"),
     ("console", "09", "CONSOLE", "Terminal : recon réseau, crypto, apprendre"),
     ("loadtest", "10", "STRESS TEST", "Test de charge de tes propres cibles"),
-    ("history", "11", "HISTORY", "Journal local horodaté"),
-    ("guide", "12", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
-    ("settings", "13", "SETTINGS", "Moteur, compte, données"),
+    ("lab", "11", "CYBER LAB", "Plateformes légales, lab isolé, méthodo"),
+    ("history", "12", "HISTORY", "Journal local horodaté"),
+    ("guide", "13", "GUIDE / INFO", "Rôle et fonctionnement des modules"),
+    ("settings", "14", "SETTINGS", "Moteur, compte, données"),
 ]
 
 _MODULE_LABELS = {
