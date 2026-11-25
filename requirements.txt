@@ -9,3 +9,4 @@ anthropic>=0.70                       # assistant IA (facultatif à l'exécution
 onnxruntime>=1.17                     # modèles ONNX personnalisés (facultatif)
 phonenumbers>=8.13                     # analyse OSINT de numéros (hors ligne)
 httpx>=0.27                           # test de charge (module STRESS TEST)
+Pillow>=10.0                          # lecture des métadonnées EXIF/GPS d'image

@@ -6,8 +6,8 @@ from html import escape
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QHeaderView, QLineEdit, QPlainTextEdit, QPushButton, QSpinBox,
-                               QTableWidget, QTableWidgetItem, QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QFileDialog, QHBoxLayout, QHeaderView, QLineEdit, QPlainTextEdit, QPushButton,
+                               QSpinBox, QTableWidget, QTableWidgetItem, QTabWidget, QTextBrowser, QVBoxLayout, QWidget)
 
 from face_analyse.osint import generators as gen
 from face_analyse.osint.email import EmailInfo
@@ -16,6 +16,7 @@ from face_analyse.osint.http import PoliteSession
 from face_analyse.osint.images import NOTICE as IMG_NOTICE
 from face_analyse.osint.images import reverse_image_links
 from face_analyse.osint.iplookup import IpInfo, lookup
+from face_analyse.osint.metadata import ImageMeta, analyze_image
 from face_analyse.osint.phone import PhoneInfo
 from face_analyse.osint.phone import investigate as phone_investigate
 from face_analyse.osint.usernames import PLATFORMS, Presence, check_usernames, profile_links
@@ -359,6 +360,80 @@ class ReverseImageTab(QWidget):
             self.ctx.log_event("image", "reverse_links", {})
 
 
+class MetadataTab(QWidget):
+    """Lecture des métadonnées EXIF/GPS d'une image locale (OSINT légitime, hors ligne)."""
+
+    def __init__(self, ctx: AppContext, parent=None):
+        super().__init__(parent)
+        self.ctx = ctx
+        lay = QVBoxLayout(self)
+        bar = QHBoxLayout()
+        self.path = QLineEdit(placeholderText="Chemin d'une image (JPG/PNG/TIFF)…")
+        self.path.returnPressed.connect(self.run)
+        self.browse = QPushButton("PARCOURIR")
+        self.browse.clicked.connect(self._pick)
+        self.btn = QPushButton("ANALYSER")
+        self.btn.setObjectName("Primary")
+        self.btn.clicked.connect(self.run)
+        bar.addWidget(self.path, 1)
+        bar.addWidget(self.browse)
+        bar.addWidget(self.btn)
+        lay.addLayout(bar)
+        self.view = QTextBrowser()
+        self.view.setOpenExternalLinks(True)
+        self.view.document().setDefaultStyleSheet('a{color:#ffffff;text-decoration:underline}td{padding-right:16px}')
+        lay.addWidget(self.view, 1)
+        lay.addWidget(muted("Lit les métadonnées déjà présentes dans le fichier (aucun envoi). Les coordonnées "
+                            "EXIF sont un INDICE : souvent absentes, parfois approximatives ou falsifiées. Un même "
+                            "modèle d'appareil ne prouve pas une identité. N'analyse que des images autorisées."))
+
+    def _pick(self):
+        from face_analyse.ui.pages.common import IMAGE_FILTER
+        fn, _ = QFileDialog.getOpenFileName(self, "Choisir une image", "", IMAGE_FILTER)
+        if fn:
+            self.path.setText(fn)
+            self.run()
+
+    def run(self):
+        p = self.path.text().strip()
+        if not p:
+            return
+        self.btn.setEnabled(False)
+        run_async(analyze_image, p, on_done=self._done, on_error=self._err)
+        self.ctx.log_event("metadata", "analyze", {})
+
+    def _done(self, m: ImageMeta):
+        self.btn.setEnabled(True)
+        self.view.setHtml(self._html(m))
+        self.ctx.repo.log_history("tools", "metadata",
+                                  f"Métadonnées image : {m.device_fingerprint}" + (" · GPS" if m.gps else ""),
+                                  {"has_gps": bool(m.gps), "device": m.device_fingerprint})
+
+    def _err(self, msg: str):
+        self.btn.setEnabled(True)
+        self.view.setHtml(f"<p style='color:#ff9a9a'>{escape(msg)}</p>")
+
+    @staticmethod
+    def _html(m: ImageMeta) -> str:
+        if m.error:
+            return f"<p style='color:#ff9a9a'>{escape(m.error)}</p>"
+        rows = [("Fichier", m.path), ("Dimensions", f"{m.width} × {m.height} px"),
+                ("Appareil", m.device_fingerprint), ("Date de prise de vue", m.datetime_original or "—")]
+        for k, v in m.other.items():
+            rows.append((k.capitalize(), v))
+        body = "".join(f"<tr><td style='color:#888'>{escape(k)}</td><td>{escape(str(v))}</td></tr>" for k, v in rows)
+        if m.gps:
+            gps = (f"<h3 style='font-weight:300'>Position GPS</h3>"
+                   f"<p>{m.gps.lat:.6f}, {m.gps.lon:.6f} — "
+                   f"<a href='{escape(m.gps.map_url)}'>voir sur la carte</a></p>")
+        else:
+            gps = "<p style='color:#888'>Aucune coordonnée GPS dans les métadonnées.</p>"
+        if not m.has_exif:
+            return ("<p style='color:#ffe9b0'>Aucune métadonnée EXIF (image nettoyée, capture d'écran, "
+                    "ou format sans EXIF).</p>" + f"<table cellspacing=4>{body}</table>")
+        return f"<table cellspacing=4>{body}</table>{gps}"
+
+
 class GeneratorsTab(QWidget):
     """Générateurs de données de test (IP, IBAN factice, UUID, MAC) + décodeur d'ID Discord."""
 
@@ -477,5 +552,6 @@ class ToolsPage(Page):
         tabs.addTab(EmailTab(ctx), "E-MAIL")
         tabs.addTab(PhoneTab(ctx), "TÉLÉPHONE")
         tabs.addTab(ReverseImageTab(ctx), "IMAGE INVERSÉE")
+        tabs.addTab(MetadataTab(ctx), "MÉTADONNÉES")
         tabs.addTab(GeneratorsTab(ctx), "GÉNÉRATEURS")
         self.root.addWidget(tabs, 1)

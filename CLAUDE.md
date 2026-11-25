@@ -27,7 +27,8 @@ face_analyse/
                links, aggregator, report (HTML/JSON), assistant (API Claude),
                email/phone/images/pdf, netinfo (DNS-over-HTTPS, RDAP, crt.sh, en-têtes,
                scan ports LOCAL), crypto_tools (hash/encodage, hors ligne),
-               generators (IP/IBAN factice/UUID/MAC + décodeur ID Discord), learn
+               generators (IP/IBAN factice/UUID/MAC + décodeur ID Discord), learn,
+               metadata (EXIF/GPS d'image locale, corrélation d'appareil — Pillow)
   dataset/     loader (CSV/JSON/TXT) + analysis (stats, histogramme, doublons)
   graph/       model (nœuds/liens) + layout (force-dirigé numpy)
   auth/        client du serveur de comptes + device info
