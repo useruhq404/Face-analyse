@@ -6,5 +6,5 @@ recherche OSINT par nom, à partir de sources publiques autorisées.
 
 __app_name__ = "FACE ANALYSE"
 __author__ = "Aruka"
-__signature__ = "discord: 35ans"
+__signature__ = "by 35"
 __version__ = "1.0.0"

@@ -35,7 +35,7 @@ BANNER = r"""
   ██╔══╝  ██╔══██║██║     ██╔══╝      ██║   ██║██║╚██╗██║╚════██║
   ██║     ██║  ██║╚██████╗███████╗    ╚██████╔╝██║ ╚████║███████║
   ╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝     ╚═════╝ ╚═╝  ╚═══╝╚══════╝
-   console · sources publiques · à but éducatif · discord: 35ans
+   console · sources publiques · à but éducatif · face analyse by 35
         tape  help  pour les commandes  ·  learn  pour apprendre
 """
 
